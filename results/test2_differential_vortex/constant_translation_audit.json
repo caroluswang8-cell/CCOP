@@ -1,0 +1,122 @@
+{
+  "configuration": {
+    "layers": [
+      12,
+      18,
+      24,
+      30
+    ],
+    "chi": 1.0,
+    "theta": 0.5,
+    "map": "exact prescribed differential vortex",
+    "solve": "square pressure-test response with sparse LU",
+    "regularization": false,
+    "extra_projection": false
+  },
+  "rows": [
+    {
+      "layers": 12,
+      "particles": 499,
+      "pressure_dofs": 423,
+      "minimum_terminal_J": 0.9840651566426428,
+      "minimum_action_J": 0.7730734793372971,
+      "components": [
+        {
+          "component": 0,
+          "constant_divergence_rms": 0.011806152665365546,
+          "constant_divergence_max": 0.0437405302855605,
+          "frozen_translation_projection_rms": 0.0011875332691882508,
+          "linear_relative_residual": 7.588968852381977e-16
+        },
+        {
+          "component": 1,
+          "constant_divergence_rms": 0.011695723232372513,
+          "constant_divergence_max": 0.03979354232806648,
+          "frozen_translation_projection_rms": 0.0011953018245763228,
+          "linear_relative_residual": 7.766190812945005e-16
+        }
+      ],
+      "maximum_constant_divergence_rms": 0.011806152665365546,
+      "maximum_translation_projection_rms": 0.0011953018245763228
+    },
+    {
+      "layers": 18,
+      "particles": 1087,
+      "pressure_dofs": 973,
+      "minimum_terminal_J": 0.9922904687119358,
+      "minimum_action_J": 0.771451622569928,
+      "components": [
+        {
+          "component": 0,
+          "constant_divergence_rms": 0.007054181432761156,
+          "constant_divergence_max": 0.030299605928266693,
+          "frozen_translation_projection_rms": 0.0004914778404274193,
+          "linear_relative_residual": 1.1414710142172167e-15
+        },
+        {
+          "component": 1,
+          "constant_divergence_rms": 0.006921977516370844,
+          "constant_divergence_max": 0.02753593017686347,
+          "frozen_translation_projection_rms": 0.0004909726066679041,
+          "linear_relative_residual": 1.1824058964281413e-15
+        }
+      ],
+      "maximum_constant_divergence_rms": 0.007054181432761156,
+      "maximum_translation_projection_rms": 0.0004914778404274193
+    },
+    {
+      "layers": 24,
+      "particles": 1901,
+      "pressure_dofs": 1749,
+      "minimum_terminal_J": 0.9953121261262226,
+      "minimum_action_J": 0.7708829939147662,
+      "components": [
+        {
+          "component": 0,
+          "constant_divergence_rms": 0.004899666140693246,
+          "constant_divergence_max": 0.0223925600882231,
+          "frozen_translation_projection_rms": 0.0002618179911358265,
+          "linear_relative_residual": 1.5254865238728208e-15
+        },
+        {
+          "component": 1,
+          "constant_divergence_rms": 0.0047971798951065405,
+          "constant_divergence_max": 0.021286436636617778,
+          "frozen_translation_projection_rms": 0.0002627883790088342,
+          "linear_relative_residual": 1.4668143455611559e-15
+        }
+      ],
+      "maximum_constant_divergence_rms": 0.004899666140693246,
+      "maximum_translation_projection_rms": 0.0002627883790088342
+    },
+    {
+      "layers": 30,
+      "particles": 2939,
+      "pressure_dofs": 2751,
+      "minimum_terminal_J": 0.9967965888424211,
+      "minimum_action_J": 0.7706196271084327,
+      "components": [
+        {
+          "component": 0,
+          "constant_divergence_rms": 0.003503588758295695,
+          "constant_divergence_max": 0.017174620837858964,
+          "frozen_translation_projection_rms": 0.00015723085021982338,
+          "linear_relative_residual": 1.742286052764983e-15
+        },
+        {
+          "component": 1,
+          "constant_divergence_rms": 0.003464245799388675,
+          "constant_divergence_max": 0.01666924659113969,
+          "frozen_translation_projection_rms": 0.000156401101216304,
+          "linear_relative_residual": 1.783786334759072e-15
+        }
+      ],
+      "maximum_constant_divergence_rms": 0.003503588758295695,
+      "maximum_translation_projection_rms": 0.00015723085021982338
+    }
+  ],
+  "fitted_rates": {
+    "constant_divergence_rms": 1.3145904670436515,
+    "frozen_translation_projection_rms": 2.2076768964160376
+  }
+}

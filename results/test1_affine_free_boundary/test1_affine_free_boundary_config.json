@@ -1,0 +1,89 @@
+{
+  "radius": 1.0,
+  "rho": 1.0,
+  "gamma": 0.5,
+  "degree": 2,
+  "independent_degree": 3,
+  "layers": [
+    12,
+    18,
+    24,
+    30
+  ],
+  "anchor_dts": [
+    0.04,
+    0.02,
+    0.01,
+    0.005
+  ],
+  "theta_values": [
+    0.0,
+    0.05,
+    0.1,
+    0.15000000000000002,
+    0.2,
+    0.25,
+    0.30000000000000004,
+    0.35000000000000003,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6000000000000001,
+    0.65,
+    0.7000000000000001,
+    0.75,
+    0.8,
+    0.8500000000000001,
+    0.9,
+    0.9500000000000001,
+    1.0
+  ],
+  "sweep_dt": 0.02,
+  "final_time": 0.5,
+  "multistep_dts": [
+    0.025,
+    0.0125,
+    0.00625,
+    0.003125
+  ],
+  "multistep_thetas": [
+    0.5,
+    1.0
+  ],
+  "stage_consistency": {
+    "layers": 18,
+    "start_time": 0.2,
+    "dts": [
+      0.02,
+      0.01,
+      0.005,
+      0.0025
+    ],
+    "thetas": [
+      0.0,
+      0.5,
+      1.0
+    ]
+  },
+  "deterministic_seed": 20260728,
+  "geometry_tolerances": {
+    "rms_over_h": 1e-12,
+    "max_over_h": 1e-11
+  },
+  "terminal_tolerances": {
+    "rms": 2e-10,
+    "max": 2e-09
+  },
+  "admissible_raw_J": 1e-06,
+  "pressure_space": "general nodal homogeneous-Dirichlet pressure; boundary values fixed zero; interior coefficients only",
+  "production_constraint": "interior pressure-label rows of transported Piola divergence",
+  "independent_divergence": "degree-3 GMLS, 32-point stencil, direct initial-reference rebuild",
+  "forbidden_mechanisms": {
+    "regularization": false,
+    "pseudo_inverse": false,
+    "determinant_clipping": false,
+    "pressure_filtering": false,
+    "hidden_projection": false
+  }
+}

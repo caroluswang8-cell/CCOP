@@ -1,0 +1,53 @@
+{
+  "R0": 1.0,
+  "rho": 1.0,
+  "omega0": 1.0,
+  "kappa": 1.0,
+  "layers": [
+    12,
+    18,
+    24,
+    30
+  ],
+  "shear_times": [
+    0.5,
+    1.0,
+    1.5
+  ],
+  "thetas_2A": [
+    0.0,
+    0.5,
+    1.0
+  ],
+  "transport_depths": [
+    4,
+    8,
+    16,
+    32,
+    64
+  ],
+  "production_thetas": [
+    0.5,
+    1.0
+  ],
+  "spatial_dt": 0.0009765625,
+  "temporal_dts": [
+    0.015625,
+    0.0078125,
+    0.00390625,
+    0.001953125
+  ],
+  "final_time": 1.0,
+  "deterministic_seed": 20260728,
+  "production_matrix": "full",
+  "phase": "all",
+  "quick": false,
+  "forbidden_mechanisms": {
+    "determinant_clipping": false,
+    "regularization": false,
+    "pseudo_inverse": false,
+    "pressure_filtering": false,
+    "geometry_reset": false,
+    "hidden_projection": false
+  }
+}

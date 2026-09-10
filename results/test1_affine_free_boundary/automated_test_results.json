@@ -1,0 +1,51 @@
+{
+  "passed": true,
+  "count": 9,
+  "tests": [
+    {
+      "name": "test_affine_map_reconstruction",
+      "passed": true,
+      "elapsed_seconds": 0.17598300008103251
+    },
+    {
+      "name": "test_compatible_endpoint_projector_is_mass_orthogonal",
+      "passed": true,
+      "elapsed_seconds": 0.3335770999547094
+    },
+    {
+      "name": "test_deterministic_repeatability",
+      "passed": true,
+      "elapsed_seconds": 0.12763249990530312
+    },
+    {
+      "name": "test_exact_boundary_pressure",
+      "passed": true,
+      "elapsed_seconds": 9.180000051856041e-05
+    },
+    {
+      "name": "test_placed_action_stage_consistency",
+      "passed": true,
+      "elapsed_seconds": 0.8775462000630796
+    },
+    {
+      "name": "test_pressure_system_rank",
+      "passed": true,
+      "elapsed_seconds": 0.05072010005824268
+    },
+    {
+      "name": "test_projector_algebra",
+      "passed": true,
+      "elapsed_seconds": 0.1871363001409918
+    },
+    {
+      "name": "test_reference_ode_invariants",
+      "passed": true,
+      "elapsed_seconds": 0.0016518000047653913
+    },
+    {
+      "name": "test_terminal_closure_and_work_identity",
+      "passed": true,
+      "elapsed_seconds": 0.06655109999701381
+    }
+  ]
+}

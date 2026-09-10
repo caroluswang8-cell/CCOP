@@ -1,0 +1,2609 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{booktabs,array,multirow,tabularx}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{url}
+\usepackage[colorlinks=true,linkcolor=blue!55!black,
+  citecolor=blue!55!black,urlcolor=blue!55!black]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{ccopalgorithm}{Algorithm}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\B}{\mathcal{B}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\V}{\mathcal{V}}
+\newcommand{\Q}{\mathcal{Q}}
+\newcommand{\K}{\mathcal{K}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\G}{\mathcal{G}}
+\newcommand{\Grad}{\operatorname{Grad}}
+\newcommand{\Div}{\operatorname{Div}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\cof}{\operatorname{cof}}
+\newcommand{\sym}{\operatorname{sym}}
+\newcommand{\range}{\operatorname{range}}
+\newcommand{\kernel}{\operatorname{ker}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\rms}{\operatorname{RMS}}
+\newcommand{\dt}{\Delta t}
+\newcommand{\Th}{\Theta}
+\newcommand{\half}{\tfrac12}
+\newcommand{\norm}[2][]{\left\lVert #2\right\rVert_{#1}}
+\newcommand{\ip}[3][]{\left\langle #2,#3\right\rangle_{#1}}
+\newcommand{\figroot}{results}
+\newcommand{\safegraphic}[2][0.94\linewidth]{%
+  \IfFileExists{#2}{\includegraphics[width=#1]{#2}}{%
+    \fbox{\parbox[c][35mm][c]{0.90\linewidth}{\centering
+    Figure file not found:\\[-1mm]\scriptsize\path{#2}}}}}
+
+\setlength{\emergencystretch}{3em}
+
+\title{Configuration Consistency in Lagrangian Pressure Projection: Terminal Incompressibility and Pressure Work}
+\author{Authors withheld for anonymous review}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Standard semi-implicit Lagrangian projection methods evaluate the incompressibility constraint and pressure action on a single geometric stage. We show that this common-stage construction hides a more fundamental configuration-assignment problem: the accepted velocity constraint belongs to the terminal configuration, whereas pressure work depends on the configuration on which the pressure impulse is represented. We therefore identify configuration consistency as a structural design principle for Lagrangian projection, separating the geometry that determines represented terminal incompressibility from that governing pressure work. We formulate this principle as configuration-consistent oblique projection (CCOP). The constraint is anchored to the terminal configuration, while the pressure action is placed independently along the material path. The cross response \(D_TG_\Theta\) retains a single scalar pressure equation and induces a configuration-dependent oblique projector. We establish its projection structure and relative-deformation solvability. For the actual force-free CCOP step on a fixed spatial discretization, a local expansion shows that midpoint action placement cancels the leading configuration-induced velocity defect without an additional pressure stage. Affine tests isolate terminal-constraint and pressure-work errors and show that identical represented closure can coexist with different correction ranges and kinetic work. A same-discretization ISPH comparison demonstrates their long-time consequences. A strictly nonaffine differential vortex then verifies the transported operators, cross response, and complete evolution under spatially varying material shear. These results establish CCOP as a configuration-consistent projection architecture that exposes and controls the finite-step relation between terminal closure and pressure work while retaining a single scalar pressure solve.
+\end{abstract}
+
+\noindent\textbf{Keywords.}
+Lagrangian incompressible flow, pressure projection, constrained mechanics,
+Piola transform, generalized moving least squares, oblique projection.
+
+\noindent\textbf{AMS subject classifications.}
+65M12, 65M25, 65M75.
+
+\section{Introduction}
+\label{sec:introduction}
+
+Pressure projection is one of the most effective ways to impose incompressibility: a predicted velocity is corrected through a scalar pressure solve, and the pressure equation can be embedded in finite-difference, finite-element, particle, or meshless discretizations \cite{Chorin1968,Temam1969,GuermondMinevShen2006}. In a Lagrangian method, this structure is especially attractive because the particles themselves carry the evolving material geometry. This moving geometry, however, introduces two distinct geometric roles that coincide on a fixed domain. The incompressibility constraint is associated with the accepted terminal configuration, whereas the pressure action is represented on a material configuration through a configuration-dependent Piola map. These two choices govern different properties: the former determines the represented incompressibility condition satisfied by the accepted state, while the latter controls the pressure impulse and its kinetic work. A Lagrangian projection must therefore specify not only which constraint is closed, but also where the multiplier acts.
+
+Particle projection methods have advanced along several complementary directions, including pressure-source construction, boundary treatment, spatial consistency, and time integration \cite{CumminsRudman1999,XuStansbyLaurence2009,KhayyerGotoh2011,GotohKhayyerGotoh2024}. Nair and Tomar~\cite{NairTomar2015} connected incompressibility to the deformation and volume state of the updated particle configuration through a deformation-gradient-based pressure formulation. Consistent high-order ISPH improves the spatial pressure operators and boundary treatment together \cite{ZhangEtAl2024}, while Matsunaga~\cite{Matsunaga2025} develops trajectory-based pressure equations with high-order Runge--Kutta integration.  These developments address complementary levels of projection design: volume-state representation, spatial consistency, and temporal integration. Here we address another structural level---the configuration assignment underlying the projection itself. At the continuum level we require incompressibility on the accepted terminal configuration, so that the corrected velocity is tangent to the terminal volume-preserving state; the particle scheme closes its explicitly identified pressure-test representation of that tangent condition. The remaining question is where the pressure gradient should act along the material path. This leads naturally to a projection with terminal divergence and an independently placed intermediate pressure action.
+
+A related separation appears in constrained mechanics. Discrete mechanics and variational integrators treat forces and constraints as distinct ingredients of the discrete update \cite{MarsdenWest2001}; RATTLE and discrete null-space methods similarly organize constraint enforcement within structure-preserving time integration \cite{Andersen1983,Betsch2005}; and related ideas have been used in incompressible particle and geometric fluid discretizations \cite{SuzukiKoshizukaOka2007,PavlovEtAl2011,GawlikEtAl2011}. Our construction is conceptually aligned with this separation, but remains within the classical pressure-projection/PPE architecture. The specific issue here is geometric: once incompressibility is assigned to the terminal configuration, the pressure multiplier must still be represented on an appropriate material configuration. CCOP makes this configuration assignment explicit while retaining a scalar pressure solve.
+
+Let $D_T$ denote the tangent of the accepted terminal incompressibility
+constraint and let $G_\Theta$ denote the Piola pressure action represented on a
+real material action configuration.  The frozen pressure correction has the
+mixed form
+\begin{equation}
+ \begin{bmatrix}
+   I & \Delta t\,G_\Theta\\
+   D_T & 0
+ \end{bmatrix}
+ \begin{bmatrix}u_T\\ p\end{bmatrix}
+ =
+ \begin{bmatrix}u^\star\\0\end{bmatrix}.
+ \label{eq:intro_saddle_factorization}
+\end{equation}
+Schur elimination gives
+\begin{equation}
+ D_TG_\Theta p=\Delta t^{-1}D_Tu^\star,
+ \label{eq:intro_cross_response}
+\end{equation}
+and therefore
+\begin{equation}
+ \Pi_\Theta=I-G_\Theta(D_TG_\Theta)^{-1}D_T.
+ \label{eq:intro_projector}
+\end{equation}
+This is the central numerical structure of CCOP.  The terminal operator fixes
+the constraint that is actually accepted; the placed pressure operator fixes
+the correction range.  The oblique projector in
+\eqref{eq:intro_projector} is consequently the Schur-complement realization of
+the method, not an auxiliary geometric construction.
+
+The distinction exposes a geometric degree of freedom without enlarging the
+pressure space.  We restrict the action to one real material configuration on the
+affine labelled-position path
+\[
+ x_\Theta=(1-\Theta)x_n+\Theta x_T.
+\]
+Changing $\Theta$ therefore changes
+$F_\Theta$, $J_\Theta$, $G_\Theta$, $D_TG_\Theta$, and the correction range,
+while retaining the same scalar pressure unknowns.  The midpoint choice is
+especially useful: it introduces
+no additional pressure stage, but under stage-consistent conditions it cancels
+the leading one-point pressure-impulse defect.  The numerical comparison is
+therefore not between two different spatial methods; it is between pressure
+architectures that use the same terminal target but represent the finite-step
+multiplier action differently.
+
+The contribution is the configuration assignment and its computable
+consequences, rather than a new algebraic identity for projectors.  The analysis
+links relative deformation to cross-response solvability, correction-range
+variation to projector obliqueness, and a stage defect to pressure-impulse
+accuracy.  A fixed-space expansion of the actual force-free CCOP equations
+identifies the surviving projected variation of the pressure-action direction
+as the leading local velocity defect.  The
+discretization realizes these relations with a square
+pressure-test response, coupled terminal geometry, and full-operator transport.
+It distinguishes exact represented closure from consistency with the continuum
+divergence and from finite-step volume preservation.
+
+The numerical evidence follows this distinction.  Affine flows isolate target
+and action effects, then measure their accumulation against a
+same-discretization ISPH workflow.  A differential vortex exposes the spatial
+effect of nonaffine shear: differentiation amplifies boundary-action error,
+whereas manufactured pressure solves test how the inverse response transmits
+that error to the corrected action.  The comparisons
+use shared spatial operators within each case; the native-pressure variant
+used for the ISPH comparison is specified separately from the cofactor-action
+realization in the other cases.
+
+The remainder is organized as follows.  \Cref{sec:configuration_assignment}
+sets the terminal and action configurations.  \Cref{sec:ccop_analysis} derives
+the cross-configuration pressure response and its Schur projector.
+\Cref{sec:meshless_discretization} describes the meshless realization and
+full-operator transport.  The three numerical cases are presented in
+\cref{sec:result1,sec:result2,sec:result3}, followed by the combined discussion
+and conclusions.
+
+\section{Configuration assignment in a finite material step}
+\label{sec:configuration_assignment}
+
+\subsection{A same-configuration reference pair}
+
+Let $\M^n\subset\R^d$ be the material support at the beginning of a step and
+let
+\begin{equation}
+  \Phi_\alpha:\M^n\rightarrow\M^\alpha,
+  \qquad F_\alpha=\nabla_X\Phi_\alpha,
+  \qquad J_\alpha=\det F_\alpha
+  \label{eq:material_maps}
+\end{equation}
+denote an admissible configuration in the step.  We assume
+\begin{equation}
+  0<J_{\min}\le J_\alpha\le J_{\max},
+  \qquad
+  \norm[L^\infty]{F_\alpha}+\norm[L^\infty]{F_\alpha^{-1}}
+  \le C_F.
+  \label{eq:admissible_geometry}
+\end{equation}
+Velocities are measured in the material mass inner product
+\begin{equation}
+  \ip[m]{u}{v}=\int_{\M^n}\rho_0 u\cdot v\,dX,
+  \qquad 0<\rho_{\min}\le\rho_0\le\rho_{\max}.
+  \label{eq:material_mass_inner_product}
+\end{equation}
+The pressure space is either $H^1(\M^n)/\R$ with a mean-zero representative,
+or $H^1_{\Gamma_D^n}(\M^n)$ when a pressure trace is prescribed.
+
+For $q$ in this gauge-fixed space, define the pulled-back weak divergence by
+\begin{equation}
+ \ip[Q',Q]{\D_\alpha v}{q}
+ =-\int_{\M^n}J_\alpha F_\alpha^{-1}v\cdot\nabla_Xq\,dX
+   +B_\alpha(v,q),
+ \label{eq:weak_divergence_continuum}
+\end{equation}
+where
+\begin{equation}
+ B_\alpha(v,q)=\int_{\partial\M^n}
+ q\,(J_\alpha F_\alpha^{-1}v)\cdot N\,dS.
+ \label{eq:boundary_form}
+\end{equation}
+For smooth fields, the associated physical divergence is
+\begin{equation}
+  \D_\alpha^{\rm str}v
+  =J_\alpha^{-1}\Div_X(J_\alpha F_\alpha^{-1}v).
+  \label{eq:strong_piola_divergence}
+\end{equation}
+The material-cofactor pressure action used in the following continuum
+formulation and in Cases~1 and~3 is
+\begin{equation}
+  \G_\alpha q
+  =\rho_0^{-1}J_\alpha F_\alpha^{-T}\nabla_Xq
+  =\rho_0^{-1}\cof(F_\alpha)\nabla_Xq.
+  \label{eq:continuum_pressure_action}
+\end{equation}
+Case~2 retains the native physical-pressure gradient of its SPH2/MLS2
+implementation, without the factor $J_\alpha$; its convention and matched
+ISPH comparison are specified in \cref{eq:case2_physical_action}.
+If the boundary term in \eqref{eq:weak_divergence_continuum} vanishes in the
+actual trial and test spaces, then
+\begin{equation}
+  \ip[m]{v}{\G_\alpha q}
+  =-\ip[Q',Q]{\D_\alpha v}{q}.
+  \label{eq:continuum_adjointness}
+\end{equation}
+This is the same-configuration Hodge reference under compatible boundary
+conditions.  The meshless realization below measures its endpoint baseline
+and the additional placement-dependent obliqueness separately.
+
+\subsection{Finite-volume state and its terminal tangent}
+\label{sec:state_tangent_bridge}
+
+Because $\M^n$ is the current reference, local finite-step volume preservation
+is the state equation
+\begin{equation}
+ \mathcal C_T^J(\Phi_T)=J_T-1=0,
+ \qquad
+ \mathcal C_T^{\log}(\Phi_T)=\log J_T=0.
+ \label{eq:finite_volume_state_residuals}
+\end{equation}
+The two residuals have the same zero set on the admissible family.  Their
+linearization supplies the geometric meaning of terminal divergence.
+
+\begin{proposition}[State--tangent identity]
+\label{prop:state_tangent_identity}
+Let $\Phi_T$ satisfy \eqref{eq:admissible_geometry}, and perturb it by a
+material-labelled physical vector field $w$ as
+$\Phi_{T,\varepsilon}=\Phi_T+\varepsilon w$.  Then
+\begin{equation}
+ D\mathcal C_T^J(\Phi_T)[w]=J_T\D_T^{\rm str}w,
+ \qquad
+ D\mathcal C_T^{\log}(\Phi_T)[w]=\D_T^{\rm str}w.
+ \label{eq:state_tangent_variations}
+\end{equation}
+Consequently, if $J_T=1$, $\kernel\D_T^{\rm str}$ is the tangent space of the
+volume-preserving configuration manifold at $\Phi_T$.
+\end{proposition}
+
+\begin{proof}
+Jacobi's formula gives
+\[
+ \left.\frac{d}{d\varepsilon}\det(F_T+\varepsilon\Grad_Xw)
+ \right|_{\varepsilon=0}
+ =J_T\tr(F_T^{-1}\Grad_Xw).
+\]
+The Piola identity reduces
+$J_T^{-1}\Div_X(J_TF_T^{-1}w)$ to the same trace.  Division by $J_T$ gives
+the logarithmic variation.
+\end{proof}
+
+This identity is continuous.  The meshless discretization does not introduce
+a discrete volume functional $\mathcal C_{T,h}$ and does not assert
+$D\mathcal C_{T,h}=D_{T,h}^q$.  Instead, let $I_h$ denote particle sampling and
+let $\mathcal R_h^q$ restrict a smooth scalar field to the pressure-test labels.
+The discrete consistency requirement is
+\begin{equation}
+ e_{D,h}(w)=
+ \norm[M_Z]{D_{T,h}^q I_hw-\mathcal R_h^q(D_T^{\rm str}w)}
+ \longrightarrow0
+ \qquad (h\longrightarrow0),
+ \label{eq:discrete_terminal_tangent_consistency}
+\end{equation}
+for smooth $w$ and a regular cloud family.  Case~3 measures
+\eqref{eq:discrete_terminal_tangent_consistency} directly, including its
+boundary-layer decomposition.
+
+Pressure elimination also requires consistency of the composite response.
+For a smooth pressure $q$, let $I_h^Qq$ denote its coefficient samples and set
+\begin{align}
+ \varepsilon_{G,h}(q)
+ &=G_{\Th,h}I_h^Qq-I_h(\mathcal G_\Th q),\notag\\
+ \varepsilon_{DG,h}(q)
+ &=D_{T,h}^qG_{\Th,h}I_h^Qq
+   -\mathcal R_h^q(D_T^{\rm str}\mathcal G_\Th q)\notag\\
+ &=\underbrace{D_{T,h}^qI_h(\mathcal G_\Th q)
+   -\mathcal R_h^q(D_T^{\rm str}\mathcal G_\Th q)}_{\text{$D$-only error}}
+   +\underbrace{D_{T,h}^q\varepsilon_{G,h}(q)}_{\text{propagated action error}}.
+ \label{eq:discrete_composite_consistency}
+\end{align}
+The norm of the sum must tend to zero independently of
+\eqref{eq:discrete_terminal_tangent_consistency}.  Second-order action accuracy
+in $M_U$ alone does not imply second-order accuracy after differentiation:
+an $O(h^{-1})$ discrete derivative bound permits an $O(h)$ propagated error.
+Case~3 measures both terms of \eqref{eq:discrete_composite_consistency}.
+
+CCOP therefore controls a represented terminal pressure-test tangent, not
+the derivative of an asserted discrete volume constraint.  The residual
+$D_{T,h}^qu_h^T$ is controlled by the pressure solve, whereas $J_h-1$, $A_J$,
+and $A_\Gamma$ also depend on spatial and temporal discretization.  In
+particular, finite-step state error can persist in a spatially exact affine
+subspace.  Direct Jacobian closure and target--action assignment address
+different parts of the discrete problem.
+
+This is the point at which the finite-step constraint viewpoint meets the
+projection architecture.  The accepted state fixes the terminal constraint
+tangent $D_T$, but retaining a pressure/PPE factorization represents the
+multiplier through a pressure field and a continuum action operator.  Unlike an
+abstract finite-dimensional reaction direction, that action is the
+configuration-dependent Piola map $G[q]$.  The pressure block of the
+factorization therefore depends on two geometries: the terminal geometry at
+which admissibility is tested and the action geometry at which the multiplier
+is represented.
+
+At frozen geometry the pressure derivative of the terminal tangent residual is
+\begin{equation}
+ D_p\!\left[\D_T
+ (u^\star-\dt\G_\Th p)\right][\delta p]
+ =-\dt\D_T\G_\Th\delta p.
+ \label{eq:cross_response_as_tangent_pressure_block}
+\end{equation}
+Hence $\D_T\G_\Th$ is the frozen pressure-to-terminal-tangent response.  In the
+coupled step, the pressure dependence of $x_T$ adds the corresponding geometry
+blocks to this principal response.
+
+\subsection{Why the constraint is terminal}
+
+Let $\alpha<T$ and let
+$\Psi_{\alpha\to T}=\Phi_T\circ\Phi_\alpha^{-1}$ denote the relative map.
+Written in $\M^\alpha$ coordinates, its terminal divergence is
+\begin{equation}
+ \D_T^{(\alpha)}v
+ =J_{\alpha\to T}^{-1}\nabla_\alpha\cdot
+ \left(J_{\alpha\to T}F_{\alpha\to T}^{-1}v\right).
+ \label{eq:terminal_divergence_relative}
+\end{equation}
+The source discrepancy introduced by a nonterminal anchor is
+\begin{equation}
+  \mathcal S_{\alpha\to T}[v]
+  =\dt^{-1}\left(\D_T^{(\alpha)}v-\D_\alpha v\right).
+  \label{eq:source_defect_definition}
+\end{equation}
+Suppose
+$\Psi_{\alpha\to T}(x)=x+\delta w_\alpha(x)+O(\delta^2)$ in $C^2$.
+Expanding the Piola factors gives
+\begin{equation}
+ \D_T^{(\alpha)}v
+ =\D_\alpha v+\delta\mathfrak M_\alpha(v,w_\alpha)+O(\delta^2),
+ \label{eq:source_defect_expansion}
+\end{equation}
+where
+\begin{equation}
+ \mathfrak M_\alpha(v,w)
+ =v\cdot\nabla_\alpha(\nabla_\alpha\cdot w)
+  -\nabla_\alpha\cdot\bigl((\nabla_\alpha w)v\bigr).
+ \label{eq:source_defect_leading_term}
+\end{equation}
+For smooth fields, commuting derivatives and expanding the second divergence
+give the more transparent form
+\begin{equation}
+ \mathfrak M_\alpha(v,w)
+ =-\tr\!\left((\nabla_\alpha w)(\nabla_\alpha v)\right).
+ \label{eq:source_defect_trace_form}
+\end{equation}
+Thus the leading mismatch is a deformation--velocity-gradient contraction;
+it need not vanish when both fields are divergence free.
+Consequently, an exact solve of
+\begin{equation}
+  \D_\alpha\left(u^\star-\dt\G_\Th p_\alpha\right)=0
+  \label{eq:nonterminal_anchor_equation}
+\end{equation}
+generally leaves
+\begin{equation}
+ \D_T^{(\alpha)}u_\alpha^T
+ =\delta\mathfrak M_\alpha(u_\alpha^T,w_\alpha)+O(\delta^2).
+ \label{eq:terminal_residual_after_lagged_solve}
+\end{equation}
+Thus accurate closure of the wrong anchor is not terminal closure.  Since the
+accepted velocity is passed to the next step on $\M^T$, the constraint
+assignment is
+\begin{equation}
+  \boxed{\alpha_c=T.}
+  \label{eq:terminal_assignment}
+\end{equation}
+
+\subsection{Why the pressure action is placed}
+
+The pressure contribution to material momentum is an interval impulse,
+\begin{equation}
+  I_p=\int_{t_n}^{t_{n+1}}\G(t)p(t)\,dt.
+  \label{eq:exact_pressure_impulse}
+\end{equation}
+A one-stage correction replaces this field-valued integral by
+\begin{equation}
+  I_p\approx\dt\G_\Th p_\Th.
+  \label{eq:placed_pressure_impulse}
+\end{equation}
+The action configuration therefore defines a one-stage representative of the
+pressure impulse, whereas the terminal configuration defines an admissibility
+target.  The temporal consequence of this freedom follows from the usual
+one-point quadrature expansion, provided the pressure stage and the geometric
+path are themselves consistent.
+
+\begin{proposition}[Defect of the placed pressure impulse]
+\label{prop:placed_impulse_order}
+Let $g(t)=\G(t)p(t)$ be twice continuously differentiable on one force-free
+pressure substep, and define the action-stage error in the momentum norm by
+\begin{equation}
+  \eta_\Th^h=g_\Th^h-g(t_n+\Th\dt).
+\label{eq:second_order_stage_consistency}
+\end{equation}
+Then
+\begin{equation}
+ \int_{t_n}^{t_{n+1}}g(t)\,dt-\dt g_\Th^h
+ =\left(\frac12-\Th\right)\dt^2\dot g(t_n)
+  -\dt\eta_\Th^h+O(\dt^3).
+ \label{eq:placed_impulse_defect}
+\end{equation}
+Consequently, if $\eta_{1/2}^h=O(\dt^2)$, midpoint placement has a
+third-order local pressure-impulse defect.  For any fixed
+$\Th\ne1/2$, the quadrature term is generically $O(\dt^2)$; an
+$O(\dt)$ endpoint stage error has the same local order.  If the remaining
+stages are stable and have matching local consistency, standard one-step
+accumulation gives global orders two and one for the corresponding pressure
+paths.  This last implication is conditional; it is not a global convergence
+theorem for an arbitrary force, viscous, or boundary predictor.
+\end{proposition}
+
+\begin{proof}
+Taylor expansion about $t_n$ gives
+\[
+ \int_{t_n}^{t_{n+1}}g(t)\,dt
+ =\dt g(t_n)+\frac{\dt^2}{2}\dot g(t_n)+O(\dt^3)
+\]
+and
+\[
+ \dt g(t_n+\Th\dt)
+ =\dt g(t_n)+\Th\dt^2\dot g(t_n)+O(\dt^3).
+\]
+Subtracting $\dt\eta_\Th^h$ proves
+\eqref{eq:placed_impulse_defect}.  The stated orders follow by cancellation
+at $\Th=1/2$ and standard stable accumulation of the local defects.
+\end{proof}
+
+The preceding statement isolates quadrature from stage construction.  The
+next result closes that distinction for the actual CCOP equations on a fixed
+spatial discretization.
+
+\begin{proposition}[Local defect of the force-free CCOP step]
+\label{prop:actual_ccop_local_defect}
+Fix finite-dimensional velocity, pressure, and constraint spaces and consider
+the smooth semidiscrete constrained system
+\begin{equation}
+ \dot x=u,\qquad \dot u=-G(x)p,\qquad D(x)u=0.
+ \label{eq:semidiscrete_constrained_flow}
+\end{equation}
+Suppose $D,G$, and the pressure branch are twice continuously differentiable
+near an exact state $(x_n,u_n,p_n)$, and suppose
+$L_n=D_nG_n$ is bijective on the chosen pressure quotient with
+$\norm{L_n^{-1}}\le C_L$.  Starting from that exact state, apply
+\eqref{eq:nonlinear_velocity}--\eqref{eq:nonlinear_terminal_constraint} with
+$u^\star=u_n$, $x^\star=x_n+\dt u_n$, $\gamma=1/2$, and
+$x_\Th=x_n+\Th(x_T-x_n)$.  Then, in any fixed equivalent finite-dimensional
+norm,
+\begin{equation}
+ u_{T,\Th}^h-u_h(t_n+\dt)
+ =\left(\frac12-\Th\right)\dt^2
+   \Pi_n G_n'[u_n]p_n+O_h(\dt^3),
+ \qquad
+ \Pi_n=I-G_n(D_nG_n)^{-1}D_n.
+ \label{eq:actual_ccop_local_velocity_defect}
+\end{equation}
+If the stated smoothness and inverse bounds are uniform over a spatial family,
+the remainder constant is uniform in $h$.  Otherwise
+\eqref{eq:actual_ccop_local_velocity_defect} is a fixed-space local result and
+must be combined with a separate spatial-consistency estimate.
+\end{proposition}
+
+\begin{proof}
+Differentiating the exact constraint at $t_n$ gives
+$D_nG_np_n=D_n'[u_n]u_n$.  The $O(\dt)$ term of the numerical terminal
+constraint gives the same equation for the leading numerical multiplier;
+bijectivity of $D_nG_n$ therefore permits the expansion
+$p_\Th^h=p_n+\dt\pi_1+O_h(\dt^2)$.  Trapezoidal kinematics gives
+$x_T=x_n+\dt u_n-\tfrac12\dt^2G_np_n+O_h(\dt^3)$, and hence
+\begin{equation*}
+ G(x_\Th)p_\Th^h
+ =G_np_n+\dt\bigl(G_n\pi_1+\Th G_n'[u_n]p_n\bigr)
+  +O_h(\dt^2).
+\end{equation*}
+The exact semidiscrete velocity has the expansion
+\begin{equation*}
+ u_h(t_n+\dt)=u_n-\dt G_np_n
+ -\frac{\dt^2}{2}\bigl(G_n\dot p_n+G_n'[u_n]p_n\bigr)
+ +O_h(\dt^3).
+\end{equation*}
+The exact and numerical terminal positions agree through $O_h(\dt^2)$.
+Subtracting their terminal constraints therefore shows that the coefficient
+of $\dt^2$ in the velocity difference lies in $\kernel D_n$.  With
+$\delta p=\pi_1-\dot p_n/2$, this condition is
+\begin{equation*}
+ D_nG_n\delta p
+ =-\left(\Th-\frac12\right)D_nG_n'[u_n]p_n.
+\end{equation*}
+Solving on the pressure quotient and substituting into the velocity expansion
+gives \eqref{eq:actual_ccop_local_velocity_defect}.
+\end{proof}
+
+The proof also identifies the multiplier stage:
+\begin{equation}
+ p_\Th^h
+ =p_n+\frac{\dt}{2}\dot p_n
+  -\left(\Th-\frac12\right)\dt
+   (D_nG_n)^{-1}D_nG_n'[u_n]p_n
+  +O_h(\dt^2).
+ \label{eq:actual_ccop_multiplier_stage}
+\end{equation}
+Thus the midpoint coefficient represents both the instantaneous midpoint
+pressure and the step-average pressure through first order; generic endpoint
+coefficients differ from their endpoint samples at $O(\dt)$.  This is a
+consequence of the terminal constraint solve, whereas centering the geometric
+operator remains the independent choice controlled by $\Th$.
+
+The leading term has a direct geometric interpretation: only the component of
+the changing pressure-action direction that survives the current constrained
+projector contributes to the local velocity defect.  Thus midpoint placement
+cancels the $O(\dt^2)$ configuration term for the actual force-free pressure
+solve, not merely for an externally prescribed sample of $g(t)$.  Relative to
+a continuum solution, the corresponding stage estimate must retain the
+spatial floor, for example
+\begin{equation}
+ \norm{\eta_{1/2,h}}
+ \le C_t\dt^2+C_sh^r,
+ \label{eq:space_time_stage_floor}
+\end{equation}
+where $r$ is established by the spatial action audit.  External-force,
+viscous, splitting, and nonhomogeneous-boundary defects require their own
+matching-order predictor estimates and are not covered by
+\cref{prop:actual_ccop_local_defect}.
+
+Proposition~\ref{prop:placed_impulse_order} is both stronger and narrower than calling $\Th$ an
+unqualified method order.  It proves a pressure-substep design rule under the
+stage-consistency hypothesis.  If the placed pressure, configuration path,
+nonpressure predictor, viscous treatment, or force splitting gives only
+$\eta_{1/2}^h=O(\dt)$, that term restores an $O(\dt^2)$ local defect even at
+$\Th=1/2$.  Conversely, changing $\Th$ in the present algorithm changes only
+the action geometry: it adds no pressure unknown, Runge--Kutta stage, or
+pressure equation per nonlinear geometry iteration.
+
+The target/action roles lead to
+\begin{equation}
+  u_T=u^\star-\dt\G_\Th p_\Th,
+  \qquad \D_Tu_T=0.
+  \label{eq:terminal_action_step_continuum}
+\end{equation}
+
+Let $g_\Th=\G_\Th p_\Th$ and
+$E_m(u)=\half\norm[m]{u}^2$.  Independent of any adjoint relation,
+\begin{equation}
+ \Delta E_p(\Th)
+ =E_m(u_T)-E_m(u^\star)
+ =-\dt\ip[m]{u^\star}{g_\Th}
+  +\frac{\dt^2}{2}\norm[m]{g_\Th}^2.
+ \label{eq:pressure_work_identity_continuum}
+\end{equation}
+Terminal closure therefore fixes neither the pressure impulse nor its kinetic
+work.
+
+Under the stronger same-configuration adjoint assumptions, the two endpoint
+placements have a useful sign interpretation.
+
+\begin{proposition}[Endpoint work bias]
+\label{prop:endpoint_work_bias}
+Assume compatible boundary terms at $n$ and $T$, exact endpoint solves, and
+$\D_nu^\star=0$.  Then
+\begin{equation}
+  \Delta E_p(n)=\frac{\dt^2}{2}\norm[m]{\G_np_n}^2\ge0,
+  \qquad
+  \Delta E_p(T)=-\frac{\dt^2}{2}\norm[m]{\G_Tp_T}^2\le0.
+  \label{eq:endpoint_work_signs}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+At the old endpoint,
+$\ip[m]{u^\star}{\G_np_n}=-\ip{\D_nu^\star}{p_n}=0$.
+At the terminal endpoint, the pressure equation and
+\eqref{eq:continuum_adjointness} give
+$\ip[m]{u^\star}{\G_Tp_T}=\dt\norm[m]{\G_Tp_T}^2$.
+Substitution into \eqref{eq:pressure_work_identity_continuum} proves the
+claim.
+\end{proof}
+
+Whenever the endpoint values bracket zero, continuity supplies a work-neutral
+interior placement; this is the criterion used in the experiment.  More
+generally, the configuration assignment is summarized by
+\begin{equation}
+  \boxed{(\alpha_c,\alpha_a)=(T,\Th).}
+  \label{eq:configuration_assignment_summary}
+\end{equation}
+
+\section{Configuration-consistent oblique projection}
+\label{sec:ccop_analysis}
+
+\subsection{Action path and nonlinear terminal state}
+
+At the beginning of a step, $x_n$ is the current labelled configuration.  The
+nonpressure predictor supplies $u^\star$ and $x^\star$.  CCOP restricts the
+unresolved multiplier-action geometry to the affine labelled-position path
+between the two step endpoints,
+\begin{equation}
+  x_\Th=x_n+\Th(x_T-x_n),\qquad 0\le\Th\le1.
+  \label{eq:linear_action_path}
+\end{equation}
+This path is an explicit one-point action model, not an assertion that the
+numerical method resolves a unique substep trajectory.  Its role is to keep
+every placement inside the space of compatible material configurations while
+retaining a single scalar pressure/PPE solve.  With the current spatial
+gradient $\Grad_n$,
+\begin{align}
+ H_T&=I+\Grad_n(x_T-x_n), & j_T&=\det H_T,\label{eq:relative_terminal_F}\\
+ H_\Th&=I+\Th(H_T-I), & j_\Th&=\det H_\Th.
+ \label{eq:relative_action_F}
+\end{align}
+The action state is the numerical path state selected by
+\eqref{eq:linear_action_path}.  Its raw determinant is monitored for
+admissibility independently from the volume-preserving terminal state.
+
+For the pressure part of the position update we use $\gamma=1/2$ and solve
+\begin{align}
+ u_T&=u^\star-\dt G_\Th[x_T]p,\label{eq:nonlinear_velocity}\\
+ x_T&=x^\star-\gamma\dt^2G_\Th[x_T]p,\label{eq:nonlinear_position}\\
+ D_T[x_T]u_T&=0.\label{eq:nonlinear_terminal_constraint}
+\end{align}
+Eliminating $u_T$ and the implicit kinematic relation defines a pressure-only
+residual,
+\begin{equation}
+ \mathcal R(p)=D_T[x_T(p)]
+ \left(u^\star-\dt G_\Th[x_T(p)]p\right),
+ \quad
+ x_T(p)=x^\star-\gamma\dt^2G_\Th[x_T(p)]p.
+ \label{eq:reduced_nonlinear_residual}
+\end{equation}
+The value $\gamma=1/2$ is fixed by trapezoidal particle kinematics rather than
+tuned to the work-neutral placement.  In the force-free case
+$u^\star=u_n$ and $x^\star=x_n+\dt u_n$, so
+\begin{equation}
+ x_T=x_n+\frac{\dt}{2}(u_n+u_T)
+     =x^\star-\frac{\dt^2}{2}G_\Th p.
+ \label{eq:gamma_trapezoidal_origin}
+\end{equation}
+The conservative-force predictor used later builds the same trapezoidal
+kinematic relation into $x^\star$.  Matching-order force and viscous stages
+preserve the pressure-step cancellation in
+\cref{prop:placed_impulse_order}.  The projector introduced below is the
+frozen linear algebra embedded in this nonlinear geometry coupling.
+
+\subsection{Weak placed problem and relative-deformation solvability}
+
+Freeze admissible maps $F_T$ and $F_\Th$.  Using
+\eqref{eq:weak_divergence_continuum}--\eqref{eq:continuum_pressure_action} and
+compatible boundary terms, the pressure equation is the variational problem
+\begin{equation}
+  a_{T,\Th}(p,q)=\dt^{-1}b_T(u^\star,q)
+  \qquad\text{for all }q\in Q,
+  \label{eq:weak_placed_problem}
+\end{equation}
+with
+\begin{align}
+ a_{T,\Th}(p,q)
+ &=\int_{\M^n}\nabla_Xq\cdot A_{T,\Th}\nabla_Xp\,dX,
+ \label{eq:placed_bilinear}\\
+ A_{T,\Th}
+ &=\rho_0^{-1}J_TJ_\Th F_T^{-1}F_\Th^{-T},
+ \label{eq:relative_tensor}\\
+ b_T(v,q)
+ &=\int_{\M^n}J_TF_T^{-1}v\cdot\nabla_Xq\,dX.
+ \label{eq:terminal_load}
+\end{align}
+
+\begin{theorem}[Frozen placed solvability]
+\label{thm:placed_solvability}
+Suppose \eqref{eq:admissible_geometry} holds and there is $c_a>0$ such that
+\begin{equation}
+  \xi\cdot\sym(A_{T,\Th}(X))\xi\ge c_a|\xi|^2
+  \label{eq:coercivity_assumption}
+\end{equation}
+for almost every $X$ and every $\xi\in\R^d$.  Then
+\eqref{eq:weak_placed_problem} has a unique solution in the gauge-fixed
+pressure space.
+\end{theorem}
+
+\begin{proof}
+The geometry and density bounds make $a_{T,\Th}$ and $b_T$ bounded.  The
+lower bound \eqref{eq:coercivity_assumption}, together with the quotient or
+Dirichlet Poincar\'e inequality, makes $a_{T,\Th}$ coercive.  The result follows
+from the Lax--Milgram theorem.
+\end{proof}
+
+The condition has a direct relative-deformation interpretation.  If
+$z=F_T^{-T}\xi$, then
+\begin{equation}
+ \xi^TF_T^{-1}F_\Th^{-T}\xi
+ =z^T\sym(F_TF_\Th^{-1})z.
+ \label{eq:relative_deformation_rewrite}
+\end{equation}
+Hence positivity of
+$\sym(F_TF_\Th^{-1})$ is sufficient after the geometry bounds are included.
+In particular,
+\begin{equation}
+ \norm[2]{F_TF_\Th^{-1}-I}\le\delta<1
+ \quad\Longrightarrow\quad
+ \lambda_{\min}\!\left(\sym(F_TF_\Th^{-1})\right)\ge1-\delta.
+ \label{eq:small_relative_deformation_condition}
+\end{equation}
+This statement acts directly on the actual relative tensor and requires no
+commutation with a perturbation factor.
+
+For the linear action path this condition can be checked before a solve.  Let
+$E=H_T-I$ and suppose $\norm[2]{E}=\varepsilon<1$.  Since
+\begin{equation}
+ H_TH_\Th^{-1}-I
+ =(1-\Th)E(I+\Th E)^{-1},
+ \label{eq:relative_path_exact_identity}
+\end{equation}
+the Neumann bound gives
+\begin{equation}
+ \norm[2]{H_TH_\Th^{-1}-I}
+ \le \frac{(1-\Th)\varepsilon}{1-\Th\varepsilon}<1.
+ \label{eq:relative_path_explicit_bound}
+\end{equation}
+If $\varepsilon\le \dt\norm[L^\infty]{\nabla u}+C\dt^2$, this is an explicit
+small-deformation step condition.  It is sufficient, not necessary: the
+experiments also measure the eigenvalue margin directly.
+
+\subsection{Frozen projection algebra}
+
+Let $L_{T,\Th}=D_TG_\Th$ be invertible on the selected pressure space.  Define
+\begin{equation}
+  \Pi_\Th=I-G_\Th L_{T,\Th}^{-1}D_T.
+  \label{eq:frozen_ccop_operator}
+\end{equation}
+
+\begin{proposition}[Exact frozen projection]
+\label{prop:frozen_projection}
+The operator \eqref{eq:frozen_ccop_operator} satisfies
+\begin{equation}
+ D_T\Pi_\Th=0,
+ \qquad
+ \Pi_\Th^2=\Pi_\Th,
+ \qquad
+ \Pi_\Th G_\Th=0,
+ \label{eq:frozen_projection_identities}
+\end{equation}
+and
+\begin{equation}
+ \range(\Pi_\Th)=\kernel(D_T),
+ \qquad
+ \kernel(\Pi_\Th)=\range(G_\Th).
+ \label{eq:frozen_projection_spaces}
+\end{equation}
+\end{proposition}
+
+\begin{proof}
+Writing $Q_\Th=G_\Th L_{T,\Th}^{-1}D_T$ gives
+$Q_\Th^2=Q_\Th$, $D_TQ_\Th=D_T$, and
+$Q_\Th G_\Th=G_\Th$.  The identities and the range/kernel statements follow
+from $\Pi_\Th=I-Q_\Th$.
+\end{proof}
+
+At the continuum endpoint, \eqref{eq:continuum_adjointness} makes
+$\range(\G_T)$ the mass-normal complement of $\kernel(\D_T)$; the ideal
+$\Pi_T$ is then the terminal Hodge projector.  For $\Th\ne T$, equality of the
+two action ranges would require, for every representable $p$, a scalar
+$\widetilde p$ satisfying
+\begin{equation}
+ \nabla_X\widetilde p
+ =\frac{J_\Th}{J_T}F_T^TF_\Th^{-T}\nabla_Xp.
+ \label{eq:off_terminal_integrability}
+\end{equation}
+The right side is not generally curl free, so the off-terminal action range is
+generically not the terminal normal space.
+
+The realized discrete endpoint has a measured nonorthogonal baseline.
+Accordingly, the Hodge terminology is reserved for the compatible continuum
+statement.  For the realized operators we report the endpoint norm as a
+baseline and use
+$\norm[M_U]{\Pi_\Th-\Pi_T}$ and the principal angle between
+$\range(G_\Th)$ and $\range(G_T)$ to measure the additional
+configuration-induced obliqueness.
+
+The following auxiliary construction separates that increment from any
+nonorthogonality already present in the meshless pair.  It is a diagnostic
+control and is not used in the pressure solve.  Define the exact terminal
+mass-adjoint functional and its placed projector by
+\begin{equation}
+ B_T^{\rm ad}=-G_T^TM_U,
+ \qquad
+ \Pi_\Th^{\rm ad}
+ =I-G_\Th(B_T^{\rm ad}G_\Th)^{-1}B_T^{\rm ad}.
+ \label{eq:compatible_endpoint_control}
+\end{equation}
+The code stores the point-value representative
+$D_T^{\rm ad}=M_Z^{-1}B_T^{\rm ad}$; the left Riesz factor cancels from the
+projector, so this is algebraically identical to
+\eqref{eq:compatible_endpoint_control}.
+If $G_T$ has full column rank, then $\Pi_T^{\rm ad}$ is the $M_U$-orthogonal
+projector onto $\ker(B_T^{\rm ad})$.  For $\Th\ne T$,
+$\Pi_\Th^{\rm ad}$ has the same target kernel but null space
+$\range(G_\Th)$ and is generally oblique.  Hence this control has an exactly
+orthogonal endpoint baseline and attributes every off-endpoint departure to
+the change of action range.
+Indeed, at $\Th=T$ the minus signs cancel and
+$\Pi_T^{\rm ad}=I-G_T(G_T^TM_UG_T)^{-1}G_T^TM_U$, the standard
+$M_U$-orthogonal projector.  For general $\Th$, the algebra in
+\cref{prop:frozen_projection} applies with $D_T=B_T^{\rm ad}$.
+
+\begin{proposition}[One-step projector proximity]
+\label{prop:projector_proximity}
+Suppose $G_\Th=G_T+\dt E_\Th$, the terminal response is invertible, and the
+placed responses remain uniformly invertible.  Then
+\begin{equation}
+ \Pi_T-\Pi_\Th
+ =\dt\,\Pi_T E_\Th L_{T,\Th}^{-1}D_T.
+ \label{eq:projector_proximity_identity}
+\end{equation}
+Consequently $\norm{\Pi_T-\Pi_\Th}=O(\dt)$, and its action on a predictor
+with $\norm{D_Tu^\star}=O(\dt)$ is $O(\dt^2)$.
+\end{proposition}
+
+\begin{proof}
+Apply the resolvent identity to
+$L_{T,\Th}=D_TG_\Th=L_{T,T}+\dt D_TE_\Th$ and collect terms:
+\[
+ G_\Th L_{T,\Th}^{-1}D_T-G_TL_{T,T}^{-1}D_T
+ =\dt(I-G_TL_{T,T}^{-1}D_T)E_\Th L_{T,\Th}^{-1}D_T.
+\]
+This is \eqref{eq:projector_proximity_identity}; the norm statements follow
+from the uniform inverse bounds.
+\end{proof}
+
+This proximity result concerns consistent small-step families.  Together with
+\cref{prop:placed_impulse_order}, it separates two related effects: the
+correction range changes by $O(\dt)$, while acting on an $O(\dt)$ pressure
+source changes the one-step velocity by $O(\dt^2)$.  Midpoint placement
+cancels the leading impulse-quadrature term, whereas terminal placement
+retains it.  The same conclusion extends to a complete scheme when its force
+and viscous stages satisfy the consistency condition
+\eqref{eq:second_order_stage_consistency}.
+
+The same range variation that produces projector obliqueness also controls the
+frozen placement sensitivity of the pressure work.  The following identity
+makes that connection precise without assuming adjointness.
+
+\begin{proposition}[Frozen placement--work sensitivity]
+\label{prop:frozen_placement_work_sensitivity}
+Fix $D_T$ and $u^\star$, let $G_\Th$ be differentiable in $\Th$, and suppose
+$L_{T,\Th}=D_TG_\Th$ is invertible throughout an interval of placements.  Set
+\begin{equation}
+ q_\Th=L_{T,\Th}^{-1}D_Tu^\star,
+ \qquad
+ u_\Th=\Pi_\Th u^\star.
+ \label{eq:frozen_placement_pressure_and_velocity}
+\end{equation}
+Then
+\begin{align}
+ \partial_\Th u_\Th
+ &=-\Pi_\Th(\partial_\Th G_\Th)q_\Th,
+ \label{eq:frozen_velocity_placement_sensitivity}\\
+ \frac{d}{d\Th}\!\left[
+  \half\norm[m]{u_\Th}^2-
+  \half\norm[m]{u^\star}^2\right]
+ &=-\ip[m]{u_\Th}
+ {\Pi_\Th(\partial_\Th G_\Th)q_\Th}.
+ \label{eq:frozen_work_placement_sensitivity}
+\end{align}
+\end{proposition}
+
+\begin{proof}
+Differentiate $L_{T,\Th}q_\Th=D_Tu^\star$ to obtain
+$\partial_\Th q_\Th=-L_{T,\Th}^{-1}D_T
+(\partial_\Th G_\Th)q_\Th$.  Since
+$u_\Th=u^\star-G_\Th q_\Th$, substitution gives
+\eqref{eq:frozen_velocity_placement_sensitivity}; differentiation of the
+kinetic energy gives \eqref{eq:frozen_work_placement_sensitivity}.
+\end{proof}
+
+Thus a common target kernel permits placement-dependent work: the component of
+the changing action direction that survives $\Pi_\Th$ enters the first
+variation.  Projector distance, principal angle, and work are complementary
+diagnostics.  Their common finite-step source is the configuration-driven
+variation of $\range(G_\Th)$.  In the fully coupled step, total differentiation
+adds the dependence of $D_T$, $G_\Th$, and $x_T$ on the nonlinear accepted
+geometry.
+
+\subsection{Local nonlinear solvability}
+\label{sec:conditional_coupled_solvability}
+
+The frozen inverse is also the core of the nonlinear solve.  Uniform
+invertibility on a closed admissible configuration neighborhood $\mathcal U$
+leads to the following local closure criterion.  Define
+\begin{equation}
+ L_\Th[x]=D_T[x]G_\Th[x],
+ \qquad
+ b_\Th[x]=\dt^{-1}D_T[x]u^\star,
+ \qquad
+ \mathcal P_\Th[x]=L_\Th[x]^{-1}b_\Th[x],
+ \label{eq:nonlinear_frozen_solution_map}
+\end{equation}
+on the fixed gauge-reduced pressure and constraint spaces.  The reduced
+geometry map associated with \eqref{eq:nonlinear_position} is
+\begin{equation}
+ \mathcal H_\Th[x]
+ =x^\star-\gamma\dt^2G_\Th[x]\mathcal P_\Th[x].
+ \label{eq:nonlinear_reduced_geometry_map}
+\end{equation}
+
+\begin{proposition}[Local coupled closure criterion]
+\label{thm:local_coupled_closure}
+Assume on $\mathcal U$ that
+$\norm{L_\Th[x]^{-1}}\le C_L$; that $L_\Th$, $b_\Th$, and $G_\Th$ are
+Lipschitz with constants $L_L$, $L_b$, and $L_G$; and that
+$\norm{G_\Th[x]}\le C_G$ and
+$\norm{\mathcal P_\Th[x]}\le C_p$.  Set
+\begin{equation}
+ L_P=C_L(L_b+L_LC_p),
+ \qquad
+ \kappa_{\rm cpl}
+ =\gamma\dt^2(L_GC_p+C_GL_P).
+ \label{eq:coupled_contraction_constant}
+\end{equation}
+If $\mathcal H_\Th(\mathcal U)\subset\mathcal U$ and
+$\kappa_{\rm cpl}<1$, then the coupled system
+\eqref{eq:nonlinear_velocity}--\eqref{eq:nonlinear_terminal_constraint} has a
+unique solution in $\mathcal U$.  Moreover, the frozen-pressure/block-Picard
+iteration $p^{(k+1)}=\mathcal P_\Th[x^{(k)}]$,
+$x^{(k+1)}=\mathcal H_\Th[x^{(k)}]$ converges to that solution.
+\end{proposition}
+
+\begin{proof}
+Subtracting
+$L_\Th[x]\mathcal P_\Th[x]=b_\Th[x]$ and
+$L_\Th[y]\mathcal P_\Th[y]=b_\Th[y]$ gives
+$\norm{\mathcal P_\Th[x]-\mathcal P_\Th[y]}
+\le L_P\norm{x-y}$.  Adding and subtracting
+$G_\Th[x]\mathcal P_\Th[y]$ in
+\eqref{eq:nonlinear_reduced_geometry_map} then gives
+$\norm{\mathcal H_\Th[x]-\mathcal H_\Th[y]}
+\le\kappa_{\rm cpl}\norm{x-y}$.  Banach's fixed-point theorem supplies the
+unique geometry; \eqref{eq:nonlinear_frozen_solution_map} supplies the unique
+pressure, and the velocity follows from \eqref{eq:nonlinear_velocity}.
+\end{proof}
+
+Since $b_\Th$ contains $\dt^{-1}$, the generic small-step contraction scales
+as $O(\dt)$.  In the discrete calculations, the measured Riesz gap supplies
+the computable inverse factor
+$C_L\le\beta_{T,\Th,h}^{-1}$ in the corresponding Riesz norms.  The iteration
+histories measure convergence, and the raw Jacobians check geometric
+admissibility; these measurements do not estimate all Lipschitz constants in
+\eqref{eq:coupled_contraction_constant}.
+
+\section{Meshless realization and full-operator transport}
+\label{sec:meshless_discretization}
+
+The continuous formulation determines the configuration assigned to each
+operator.  The spatial realization completes the construction by forming a
+stable square map between the selected pressure and constraint spaces.  This
+section gives the GMLS realization used in Cases~1 and~3.  Case~2 specifies
+its SPH2/MLS2 variant separately.  In both settings, endpoint adjointness is
+distinct from cross-response invertibility.
+
+\subsection{Point clouds and GMLS derivatives}
+
+Let $\{X_i\}_{i=1}^N$ be a quasi-uniform cloud with positive material volumes
+$m_i$ and boundary labels $\mathcal I_\Gamma$.  On the initial physical domain
+of each run we construct degree-two GMLS first derivatives.  For a center
+$X_i$, scaled monomials $P_i$ of total degree two and a compact Wendland
+$C^2$ weight matrix $W_i$ give the derivative row
+\begin{equation}
+  w_i^{(\mu)}=W_iP_i(P_i^TW_iP_i)^{-1}\lambda_i^{(\mu)},
+  \qquad \mu\in\{x,y\},
+  \label{eq:gmls_row}
+\end{equation}
+where $\lambda_i^{(\mu)}$ evaluates the corresponding derivative of the
+scaled polynomial basis at the stencil center.  The stencils used in the
+pressure step have
+18 neighbors.  Shifted and scaled coordinates are essential: rank is checked
+against a relative singular threshold $10^{-12}$, and both the polynomial
+moment defect and local condition number are recorded.  Degree-three,
+32-neighbor derivatives define an independent all-particle divergence
+diagnostic; they do not enter the pressure equation.
+
+The scalar derivatives used in the pressure step are denoted
+$H_x,H_y\in\R^{N\times N}$.
+For interleaved velocity storage
+$v=(v_{1x},v_{1y},\ldots,v_{Nx},v_{Ny})^T$, the initial all-particle
+divergence is
+\begin{equation}
+  D_0^{\rm str}v=H_xv_x+H_yv_y.
+  \label{eq:initial_strong_matrix}
+\end{equation}
+The same derivatives reconstruct the current vector gradient needed for
+relative geometry.  Their shared polynomial moments make the affine mechanism
+test exact, while the nonaffine tests directly measure spatial truncation.
+
+\subsection{Square pressure-test spaces}
+
+On a free surface, pressure values on $\mathcal I_\Gamma$ are prescribed and
+the interior labels
+\begin{equation}
+  \mathcal I_q=\{1,\ldots,N\}\setminus\mathcal I_\Gamma,
+  \qquad N_q=N-|\mathcal I_\Gamma|,
+  \label{eq:interior_pressure_labels}
+\end{equation}
+are the pressure coefficients.  The initial homogeneous action and constraint
+divergence are
+\begin{equation}
+  G_0\in\R^{2N\times N_q},
+  \qquad
+  D_0^q=D_0^{\rm str}[\mathcal I_q,:]
+  \in\R^{N_q\times2N}.
+  \label{eq:initial_square_pair}
+\end{equation}
+Thus $D_T^qG_\Th$ is square.  The pressure step uses this pressure-test
+response, while the all-particle matrix
+$\widehat D_T^{\rm ind}\in\R^{N\times2N}$ supplies an independent physical
+divergence diagnostic.
+
+The row-restricted $D_T^q$ is a represented pressure-test operator, not the
+derivative of the reported polygonal or Jacobian area.  Consequently,
+$D_T^qu_T=0$ is an exact algebraic statement in $Q_{h,0}^*$, while
+\eqref{eq:discrete_terminal_tangent_consistency}, the all-particle independent
+divergence, and the two area measures determine its spatial fidelity to the
+continuum tangent and state equations.
+
+For a periodic domain the corresponding pressure space is the mass-weighted
+mean-zero quotient.  If $Z_p$ spans
+\begin{equation}
+  Q_{h,0}=\{p_h:\bm 1^TM_Qp_h=0\},
+  \label{eq:periodic_mean_zero_space}
+\end{equation}
+then the response is formed on the quotient rather than by fixing a pressure
+node.  No periodic pin, deleted divergence row, spectral mode filtering, or
+diagonal regularization is used.
+
+The free-boundary row restriction defines the concrete pressure-test space.
+Rank, scaled singular values, manufactured $G$, $D$, and $DG$ actions, and
+refinement establish its admissibility on every reported cloud.  Directly
+testing the composition is essential because separate polynomial reproduction
+of $D_h$ and $G_h$ does not determine the cross response.
+
+\subsection{Relative transport of the accepted operators}
+
+At the beginning of step $n$, the accepted discrete state is
+\begin{equation}
+  \mathcal S_n=(x_n,u_n,D_n^q,G_n,\Grad_{{\rm geom},n}).
+  \label{eq:production_state}
+\end{equation}
+Given the relative matrices $H_T,H_\Th$ in
+\eqref{eq:relative_terminal_F}--\eqref{eq:relative_action_F}, their blockwise
+Piola and cofactor transports are
+\begin{align}
+ D_T^qv
+ &=j_T^{-1}D_n^q\bigl(j_TH_T^{-1}v\bigr),
+ \label{eq:discrete_divergence_transport}\\
+ G_\Th p
+ &=j_\Th H_\Th^{-T}G_np,
+ \label{eq:discrete_action_transport}\\
+ G_Tp
+ &=j_TH_T^{-T}G_np.
+ \label{eq:discrete_terminal_action_transport}
+\end{align}
+The matrices $jH^{-1}$ and $jH^{-T}$ act particlewise on the velocity
+blocks.  Formula \eqref{eq:discrete_action_transport} treats $G_n$ as the
+complete current pressure-action state; a cumulative Jacobian is not
+multiplied a second time.
+
+The geometry derivative reconstructs relative deformation and is transported
+by the vector-gradient
+chain rule,
+\begin{equation}
+ \Grad_{{\rm geom},n+1}v
+ =\Grad_{{\rm geom},n}v\,H_T^{-1}.
+ \label{eq:geometry_gradient_transport}
+\end{equation}
+The accepted divergence is committed directly through
+\eqref{eq:full_operator_commit}, preserving the terminal constraint across
+steps.
+
+\subsection{Riesz scaling and the frozen pressure solve}
+
+Let $m_i^0>0$ be the initial material quadrature weights.  At the beginning of
+step $n$, the represented volume is
+$m_i^n=m_i^0J_{{\rm cum},i}^n$ and its terminal candidate is
+$m_i^T=m_i^nj_{T,i}$.  On a free-boundary pressure/test label
+$a\in\mathcal I_q$, the Riesz maps used in every reported spectrum are
+\begin{equation}
+ M_Q=\diag(m_a^0)_{a\in\mathcal I_q},
+ \qquad
+ M_Z=\diag(m_a^T)_{a\in\mathcal I_q}.
+ \label{eq:free_boundary_riesz_maps}
+\end{equation}
+Thus $M_Q$ measures the fixed material pressure coefficients and $M_Z$ measures
+returned terminal constraint values; they are constructed separately even when
+their entries happen to agree.  On a periodic quotient they are replaced by
+$Z_p^T\diag(m_i^0)Z_p$ and $Z_D^T\diag(m_i^T)Z_D$, respectively.  Here $Z_p$
+is the mass-mean-zero pressure basis and $Z_D$ removes only the verified global
+compatibility direction.  No empirically fitted diagonal scaling is used.
+
+The velocity Riesz map is
+\begin{equation}
+ M_U^{(n)}=\diag(\mu_1^n,\mu_1^n,\ldots,\mu_N^n,\mu_N^n),
+ \label{eq:velocity_mass_matrix}
+\end{equation}
+and is held fixed during a pressure correction and its kinetic-work identity.
+The affine and differential-vortex calculations use the fixed material
+weights $\mu_i^n=m_i^0$.  The diagnostic choice does not enter the square
+strong pressure equation.
+
+The constraint matrix $D_T^q$ returns point values, so its scaled response is
+\begin{equation}
+ \widehat L_{T,\Th,h}
+ =M_Z^{1/2}D_T^qG_\Th M_Q^{-1/2}.
+ \label{eq:riesz_scaled_response}
+\end{equation}
+If dual constraint coefficients $D_{T,{\rm dual}}^q=M_ZD_T^q$ are stored,
+the equivalent expression is
+$M_Z^{-1/2}D_{T,{\rm dual}}^qG_\Th M_Q^{-1/2}$.
+We report
+\begin{equation}
+ \beta_{T,\Th,h}=\sigma_{\min}(\widehat L_{T,\Th,h}),
+ \qquad
+ \kappa_{\rm cross}=
+ \frac{\sigma_{\max}(\widehat L_{T,\Th,h})}
+      {\sigma_{\min}(\widehat L_{T,\Th,h})}.
+ \label{eq:scaled_cross_metrics}
+\end{equation}
+The Riesz-scaled quantities in \eqref{eq:scaled_cross_metrics} are the
+stability diagnostics used throughout.
+
+The following elementary lemma records the finite-dimensional stability
+transfer used by the square collocation solve.
+
+\begin{lemma}[Discrete cross-response stability]
+\label{prop:discrete_cross_response_stability}
+Let $A_h=D_T^qG_\Th$ be square and let
+$\beta_{T,\Th,h}>0$ be defined by \eqref{eq:riesz_scaled_response}--
+\eqref{eq:scaled_cross_metrics}.  If $A_hp_h=b_h$, then for every comparison
+coefficient $p_I$,
+\begin{equation}
+ \norm[M_Q]{p_h-p_I}
+ \le \beta_{T,\Th,h}^{-1}
+      \norm[M_Z]{b_h-A_hp_I}.
+ \label{eq:discrete_pressure_stability_bound}
+\end{equation}
+Moreover,
+\begin{equation}
+ \norm[M_U]{G_\Th(p_h-p_I)}
+ \le C_{G,h}\beta_{T,\Th,h}^{-1}
+      \norm[M_Z]{b_h-A_hp_I},
+ \quad
+ C_{G,h}=\norm[2]{M_U^{1/2}G_\Th M_Q^{-1/2}}.
+ \label{eq:discrete_action_stability_bound}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Set $e=M_Q^{1/2}(p_h-p_I)$.  Then
+$\widehat L_{T,\Th,h}e=M_Z^{1/2}(b_h-A_hp_I)$, and the first estimate follows
+from the smallest singular value.  Applying the scaled action to $e$ gives the
+second estimate.
+\end{proof}
+
+The gap controls coefficient error, but action error also involves a
+derivative.  A sharper transfer constant is
+\begin{equation}
+ C_{{\rm resp},h}
+ =\norm[2]{M_U^{1/2}G_\Th A_h^{-1}M_Z^{-1/2}},\qquad
+ \norm[M_U]{G_\Th(p_h-p_I)}
+ \le C_{{\rm resp},h}\norm[M_Z]{b_h-A_hp_I}.
+ \label{eq:discrete_response_transfer}
+\end{equation}
+This follows directly from $p_h-p_I=A_h^{-1}(b_h-A_hp_I)$, and
+$C_{{\rm resp},h}\le C_{G,h}/\beta_{T,\Th,h}$.  Uniform bounds on
+$\beta^{-1}$ and $C_{{\rm resp},h}$, together with an $O(h^r)$ comparison
+residual, would give $O(h^r)$ coefficient and action errors.  A measured
+spectral gap alone does not supply the latter bound; in particular,
+$C_{G,h}$ need not remain bounded under refinement.  The present spectral
+tests establish invertibility on the tested configurations, while consistency
+and full-solution errors are measured separately.
+
+For analytic forcing $b_h=\mathcal R_h^q(D_T^{\rm str}\mathcal G_\Th q)$,
+the errors in \eqref{eq:discrete_composite_consistency} give the exact identity
+\begin{equation}
+ G_{\Th,h}p_h-I_h(\mathcal G_\Th q)
+ =\varepsilon_{G,h}(q)
+  -G_{\Th,h}A_h^{-1}\varepsilon_{DG,h}(q).
+ \label{eq:solved_action_error_decomposition}
+\end{equation}
+It is the inverse-weighted composite defect, rather than
+$\varepsilon_{DG,h}$ alone, that enters the solved action.  Thus a lower
+consistency rate for $DG$ neither proves nor excludes a higher rate for that
+action.  The manufactured solves in Case~3 measure this transfer with analytic
+right-hand sides.
+
+For frozen geometry the pressure equation is
+\begin{equation}
+  D_T^qG_\Th p=\dt^{-1}D_T^qu^\star.
+  \label{eq:discrete_pressure_equation}
+\end{equation}
+It is solved by sparse LU in Cases~1 and~3.  Case~2 uses the pressure-only
+Newton--Krylov implementation specified below.  The projection identities in
+\cref{prop:frozen_projection} are tested with the actual matrices and random
+as well as manufactured vectors.
+
+\subsection{Nonlinear geometry iteration and final consistency rebuild}
+
+Starting from $x_T^{(0)}=x^\star$, one Picard iteration consists of
+\begin{align}
+ &H_T^{(k)},j_T^{(k)},H_\Th^{(k)},j_\Th^{(k)}
+     \quad\hbox{from }x_T^{(k)},\nonumber\\
+ &D_T^{q,(k)}G_\Th^{(k)}p^{(k+1)}
+     =\dt^{-1}D_T^{q,(k)}u^\star,\label{eq:picard_linear_solve}\\
+ &u^{(k+1)}=u^\star-\dt G_\Th^{(k)}p^{(k+1)},\nonumber\\
+ &x_{\rm cand}^{(k+1)}
+   =x^\star-\gamma\dt^2G_\Th^{(k)}p^{(k+1)}.
+ \label{eq:picard_update_equations}
+\end{align}
+Relaxation is applied only to the position iterate.  Both normalized RMS and
+maximum kinematic increments must converge.
+
+After Picard convergence the geometry is rebuilt, the square pressure equation
+is solved, the velocity and kinematic position are recomputed, and the
+operators are rebuilt once more on that returned position.  Acceptance uses
+the complete pressure-test residual, the independent kinematic residual, and
+the raw determinants.  Typical double-precision gates are $10^{-10}$ in the
+relative pressure residual, $2\times10^{-10}$ and $2\times10^{-9}$ in the RMS
+and maximum represented divergence, and $10^{-9}$ in the normalized final
+kinematic residual.  Every accepted determinant is evaluated without clipping
+and satisfies $j>10^{-6}$.  Pseudo-inverses, diagonal shifts, filtered pressure
+modes, deleted rows, and post-acceptance corrective projections are absent.
+
+Only after this final consistency rebuild passes do we commit
+\begin{equation}
+ x_{n+1}=x_T,\qquad u_{n+1}=u_T,\qquad
+ D_{n+1}^q=D_T^q,\qquad G_{n+1}=G_T,
+ \label{eq:full_operator_commit}
+\end{equation}
+together with \eqref{eq:geometry_gradient_transport}.  Hence
+\begin{equation}
+ D_{n+1}^qu_{n+1}=D_T^qu_T
+ \label{eq:start_step_continuity}
+\end{equation}
+before any correction in the next step.  Recursive operators are also compared
+with their direct cumulative Piola/cofactor transports.  These comparisons are
+verification diagnostics; the recursive accepted matrices remain the
+time-stepping state.
+
+\begin{ccopalgorithm}[One accepted CCOP step]
+\label{alg:accepted_ccop_step}
+The complete step is listed in the order in which its configuration dependence
+enters.
+The nonpressure predictor is a specified part of each problem rather than an
+implicit solver option.  Case~1 is force free and uses
+\begin{equation}
+ u^\star=u_n,\qquad x^\star=x_n+\dt u_n.
+ \label{eq:force_free_predictor}
+\end{equation}
+For $f(x)=-A_fx$, with $A_f=\Omega^2I$ in Case~2 and $A_f=I$ in Case~3,
+the implicit-midpoint force predictor is
+\begin{equation}
+ \left(I+\frac{\dt^2}{4}A_f\right)u_{n+1/2}
+ =u_n-\frac{\dt}{2}A_fx_n,\qquad
+ u^\star=2u_{n+1/2}-u_n,\qquad
+ x^\star=x_n+\frac{\dt}{2}(u_n+u^\star).
+ \label{eq:conservative_force_predictor}
+\end{equation}
+Starting from the incoming state \eqref{eq:production_state}, one step is:
+\begin{enumerate}[label=\textbf{\arabic*.},leftmargin=2.2em,itemsep=0.25em]
+\item Evaluate the problem-specific predictor and initialize $x_T^{(0)}$.
+\item At Picard iterate $x_T^{(k)}$, reconstruct $H_T^{(k)}$ and the linear
+path $H_\Th^{(k)}$ with $\Grad_{{\rm geom},n}$; evaluate raw determinants and
+reject the trial if either is nonpositive or below the admissibility threshold.
+\item Transport the incoming accepted operators by
+\eqref{eq:discrete_divergence_transport}--
+\eqref{eq:discrete_terminal_action_transport}.
+\item Solve the square pressure-test equation
+\eqref{eq:discrete_pressure_equation}, and evaluate
+$u^{(k+1)}$ and $x_{\rm cand}^{(k+1)}$ from
+\eqref{eq:picard_update_equations}.  Relax only the position iterate and repeat
+until both RMS and maximum geometry increments converge.
+\item Perform the final consistency rebuild: reconstruct the terminal and action geometry
+from the returned position, resolve pressure, recompute velocity and position,
+and rebuild once more on that accepted candidate.  Check the complete square
+pressure residual, the represented terminal pressure-test residual, the
+kinematic fixed point, and every raw Jacobian.
+\item Commit \eqref{eq:full_operator_commit} and
+\eqref{eq:geometry_gradient_transport} directly.  The pressure labels remain
+fixed, and the accepted $D_T^q$ becomes the next-step divergence without a
+post-step projection or scalar-gradient reconstruction.
+\end{enumerate}
+\end{ccopalgorithm}
+
+The algebraic structure per nonlinear iteration is independent of $\Th$:
+every placement reconstructs one terminal/action geometry pair and solves one
+square pressure system of the same dimension.  Midpoint placement therefore
+obtains the cancellation in \eqref{eq:placed_impulse_defect} without a second
+pressure stage or an additional pressure equation.  Total nonlinear work can
+still vary through the Picard count and is therefore recorded rather than
+assumed equal.  In the affine multistep matrix, the 540 accepted steps for each
+placement required mean Picard counts 4.213 for $\Th=1/2$ and 4.220 for
+$\Th=1$ (both ranged from 3 to 6), so the realized nonlinear work is also
+essentially identical in this mechanism test.
+
+\subsection{Independent physical diagnostics}
+
+The represented constraint, the independent divergence, and the area measures
+are kept distinct.  The degree-three operator provides
+\begin{equation}
+ \widehat D_T^{\rm ind}u_T,
+ \label{eq:independent_divergence}
+\end{equation}
+reported in the bulk, first boundary layer, boundary, and globally.  It never
+appears in \eqref{eq:discrete_pressure_equation}.  The Jacobian area and the
+boundary area are
+\begin{equation}
+ A_J=\sum_i m_iJ_{{\rm cum},i},
+ \qquad
+ A_\Gamma=\frac12\oint_\Gamma(x\,dy-y\,dx).
+ \label{eq:two_area_measures}
+\end{equation}
+Their reported relative defects are
+\begin{equation}
+ e_A^J(t)=\frac{|A_J(t)-A_J(0)|}{A_J(0)},
+ \qquad
+ e_A^\Gamma(t)=\frac{|A_\Gamma(t)-A_\Gamma(0)|}{A_\Gamma(0)}.
+ \label{eq:relative_area_defects}
+\end{equation}
+For the supplementary transport spot check we also use
+\begin{equation}
+ \eta_F(t)=
+ \left(\frac{\sum_i m_i\norm[\mathrm F]{F_{{\rm cum},i}(t)-I}^2}
+ {\sum_i m_i}\right)^{1/2},
+ \qquad
+ e_J^{\rm rms}(t)=
+ \left(\frac{\sum_i m_i(J_{{\rm cum},i}(t)-1)^2}
+ {\sum_i m_i}\right)^{1/2}.
+ \label{eq:cumulative_deformation_diagnostics}
+\end{equation}
+Finally, $D_T^qu_T=0$ is the represented terminal pressure-test tangency
+condition motivated by \cref{prop:state_tangent_identity}.  It is not relabeled
+as a discrete $J_h=1$ constraint.  The two area measures in
+\eqref{eq:two_area_measures} independently quantify the finite-volume state
+consequence, including both spatial and temporal state errors rather than
+only the algebraic closure tolerance.
+
+\subsection{Constant-field and translation-equivariance diagnostics}
+\label{sec:constant_field_diagnostics}
+
+Piola transport of a consistent continuous divergence annihilates every
+constant physical velocity.  The matrix recursion
+\eqref{eq:discrete_divergence_transport} does not inherit this property solely
+from recursive/direct agreement, because a discrete GMLS derivative need not
+satisfy a product rule or commuting mixed derivatives.  We therefore monitor
+the necessary constant-field defect
+using
+$\norm[M_Z,{\rm rms}]{z}^2=z^TM_Zz/(\bm1^TM_Z\bm1)$ and
+$\norm[M_U,{\rm rms}]{v}^2=v^TM_Uv/\sum_i\mu_i$:
+\begin{equation}
+ e_{\rm const}(T)
+ =\max_{k=1,2}\norm[M_Z,{\rm rms}]{D_T^qe_k},
+ \qquad e_1=(1,0)^T,\quad e_2=(0,1)^T,
+ \label{eq:constant_field_divergence_defect}
+\end{equation}
+with the constant vectors repeated at all particles.  For one directly
+transported two-dimensional map reconstructed with $H_x,H_y$, expansion of
+the discrete Piola rows gives
+\begin{align}
+ D_T^qe_1
+ &=\mathcal R_h^q\!\left[J^{-1}(H_xH_y-H_yH_x)y\right],\notag\\
+ D_T^qe_2
+ &=-\mathcal R_h^q\!\left[J^{-1}(H_xH_y-H_yH_x)x\right].
+ \label{eq:constant_field_commutator}
+\end{align}
+Thus exact annihilation is equivalent here to a discrete mixed-derivative
+commutation property and is not implied by polynomial reproduction alone.
+
+For the realized square pair, set
+$\Pi_{\Th,h}^q=I-G_\Th(D_T^qG_\Th)^{-1}D_T^q$.  Its associated frozen
+translation-equivariance defect is independent of the particular predictor
+$v$:
+\begin{equation}
+ \begin{split}
+ e_{\rm tr}(c)
+ &=\norm[M_U,{\rm rms}]{\Pi_{\Th,h}^q(v+c)-\Pi_{\Th,h}^qv-c}\\
+ &=\norm[M_U,{\rm rms}]{G_\Th(D_T^qG_\Th)^{-1}D_T^qc}.
+ \end{split}
+ \label{eq:frozen_translation_defect}
+\end{equation}
+These diagnostics test physical consistency of the transported rows; they are
+separate from projector closure, which is exact for the matrix pair actually
+solved.  Their nonaffine refinement is reported in
+\cref{tab:supp_constant_translation_audit}.
+
+\section{Case 1: Terminal closure and pressure work are independent finite-step properties}
+\label{sec:result1}
+
+An affine solution lying in the polynomial reproducing space isolates the
+mechanism without spatial-reconstruction contamination.  Following Roberts,
+Shkoller, and Sideris
+\cite{RobertsShkollerSideris2020}, let
+$\B=\{X\in\R^2:|X|<1\}$ and
+\begin{equation}
+  x(t,X)=A(t)X,
+  \qquad A(t)\in\mathrm{SL}(2,\R),
+  \label{eq:affine_exact_map}
+\end{equation}
+where
+\begin{equation}
+ \ddot A=\lambda\cof A,
+ \qquad
+ \lambda=-\frac{2\det\dot A}{|A|_F^2},
+ \qquad
+ A(0)=I,\quad \dot A(0)=\diag(1,-1).
+ \label{eq:affine_matrix_equation}
+\end{equation}
+The exact velocity and pressure are
+\begin{equation}
+ u(t,A(t)X)=\dot A(t)X,
+ \qquad
+ p(t,A(t)X)=\frac{\lambda(t)}2(1-|X|^2).
+ \label{eq:affine_velocity_pressure}
+\end{equation}
+For these diagonal data, $A=\diag(a,a^{-1})$ and
+\begin{equation}
+ \lambda=\frac{2\dot a^2}{a^4+1},
+ \qquad
+ \ddot a=\frac{2\dot a^2}{a(a^4+1)},
+ \qquad
+ \dot a=\frac{\sqrt2a^2}{\sqrt{a^4+1}}.
+ \label{eq:affine_scalar_reference}
+\end{equation}
+A DOP853 reference preserves $\det A=1$ to $1.11\times10^{-16}$ and the
+matrix energy $|\dot A|_F^2/2=1$ to $6.66\times10^{-16}$.  The pressure is
+positive in the disk and vanishes on its boundary.
+
+The quasi-uniform disk levels have $h\simeq1/12,1/18,1/24,1/30$.  All four
+square pressure responses are full rank; their complete scaled spectra and
+pressure modes are reported in \cref{app:operator_audits}.  Because affine
+trace-free velocity and quadratic pressure are reproduced, this problem
+identifies finite-step structure rather than a spatial rate.
+
+\subsection{The anchor determines which constraint is closed}
+
+At $\Th=1/2$ we use the same predictor and placed action but form the pressure
+equation with $D_n^q$, $D_\star^q$, or $D_T^q$.  For
+$\dt=0.04,0.02,0.01,0.005$, each solve closes its own anchor.  The residual of
+the same returned velocity under the terminal operator behaves as shown in
+\cref{tab:anchor_rates}.  Current anchoring leaves an $O(\dt)$ terminal
+residual and an $O(1)$ source mismatch.  Predictor anchoring is higher order in
+this particular problem, whereas terminal anchoring reaches the
+floating-point solve floor.
+
+\begin{table}[t]
+\centering
+\caption{Observed rates in the affine anchor experiment.  The source mismatch
+is $\dt^{-1}\norm{D_T^qu_\alpha^T}$.  Rates at the floating-point closure floor
+are not fitted.}
+\label{tab:anchor_rates}
+\begin{tabular}{lrrr}
+\toprule
+anchor & terminal residual & source mismatch & $J_T-1$ \\
+\midrule
+$D_n^q$       & 1.001 & 0.001 & 2.000 \\
+$D_\star^q$   & 2.999 & 1.999 & 3.999 \\
+$D_T^q$       & fp64 floor & fp64 floor & 3.998 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The predictor rates $O(\dt^3)$ and $O(\dt^2)$ are specific to the symmetric
+affine reference.  Their value is structural: even an accurately closed,
+higher-order nonterminal anchor leaves a distinct terminal residual, whereas
+$D_T$ anchoring closes the accepted target to the solver tolerance.
+
+\begin{figure}[t]
+\centering
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\safegraphic{\figroot/test1_affine_free_boundary/figures/anchor_residuals.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\safegraphic{\figroot/test1_affine_free_boundary/figures/theta_energy_closure.png}
+\end{minipage}
+\par\medskip
+\safegraphic[0.72\linewidth]{\figroot/test1_affine_free_boundary/figures/projector_geometry.png}
+\caption{Mechanism identification in the affine free-boundary flow.  Top
+left: a solution that closes a lagged anchor retains a terminal source.  Top
+right: all placements close their respective represented terminal pressure-test
+constraints to the same solver tolerance while their pressure-induced kinetic
+changes differ.  Bottom:
+changing the placed action changes both the mass-scaled distance from the
+terminal projector and the principal angle between the placed and terminal
+action ranges.  The third projector panel includes the auxiliary compatible
+endpoint control, which removes the meshless-pair nonorthogonality at
+$\Th=T$.}
+\label{fig:test1_mechanism}
+\end{figure}
+
+\subsection{The placed action determines projector geometry and pressure work}
+
+With the terminal target fixed, a sweep over
+$\Th=0,0.05,\ldots,1$ at $\dt=0.02$ shows that every placement satisfies
+$D_T^qu_T=0$ to the common solver tolerance, and the independently evaluated
+kinetic identity \eqref{eq:pressure_work_identity_continuum} closes at the
+floating-point arithmetic floor.
+
+A separate frozen projector experiment holds the terminal geometry returned by the
+$h\simeq1/12$, $\Th=1/2$ case fixed and sweeps the action configuration along
+that accepted position path.  It tests exactly the operator family
+in \eqref{eq:frozen_ccop_operator} and separates projector geometry from the
+change of nonlinear terminal state across independently solved placements.  Across
+all 21 frozen placements, closure, idempotence, and action annihilation hold
+to the direct-solve tolerance; their numerical floors are listed in the
+appendix.  Relative to the terminal projector, the
+mass-scaled projector distance and largest action-space angle are
+\begin{equation}
+\begin{array}{c|ccc}
+\Th & 0 & 1/2 & 1 \\ \hline
+\norm[M_U]{\Pi_\Th-\Pi_T}
+ & 3.1319\times10^{-2} & 1.5669\times10^{-2} & 1.68\times10^{-14}\\
+\angle_{\max}(\range G_\Th,\range G_T)
+ & 1.14565^\circ & 0.57285^\circ & 3.82\times10^{-6}\,{}^\circ.
+\end{array}
+\label{eq:test1_projector_geometry_values}
+\end{equation}
+The measured endpoint discretization baseline is
+$\norm[M_U]{\Pi_T}=1.61863$, with relative Green/adjoint defect 0.248.
+The distance and angle in \eqref{eq:test1_projector_geometry_values} isolate
+the increment produced by configuration placement.  The baseline is fixed as $\Th$ varies,
+whereas the added angle at $\Th=0$ is $0.019995$ radians at $\dt=0.02$, the
+$O(\dt)$ scale predicted by \cref{prop:projector_proximity}.  These diagnostics
+therefore measure different effects rather than competing percentages.
+
+The auxiliary control \eqref{eq:compatible_endpoint_control} makes the
+identification independent of that baseline.  It gives
+\begin{equation}
+ \begin{aligned}
+ \norm[M_U]{\Pi_T^{\rm ad}}&=1.0000000\quad\hbox{(to roundoff)},&
+ \norm[M_U]{\Pi_0^{\rm ad}}&=1.00019994,\\
+ \norm[M_U]{\Pi_0^{\rm ad}-\Pi_T^{\rm ad}}
+ &=1.9998\times10^{-2}.&&
+ \end{aligned}
+ \label{eq:test1_compatible_projector_control}
+\end{equation}
+with endpoint mass-self-adjoint defect $1.38\times10^{-15}$.  Closure,
+idempotence, and action annihilation remain at $2.3\times10^{-15}$ or below.
+Thus a compatible endpoint is orthogonal to roundoff, whereas moving the same
+action space away from $T$ produces a nonzero projector distance and a norm
+strictly larger than one.  The meshless sweep and the compatible control
+therefore identify, respectively, the realized total projector and the pure
+configuration-induced increment.
+
+The endpoint adjoint defect is a full-space measure.  In this affine test, the
+trace-free velocity and quadratic pressure lie in the exactly reproduced
+polynomial subspace, where mapped action errors are below $10^{-15}$.  This
+resolved subspace explains the nearly antisymmetric endpoint work values.
+
+The frozen common target therefore coexists with genuinely different
+correction ranges.  The nonlinear placement sweep likewise exhibits common
+represented closure and different work.  This is qualitatively consistent with
+the sensitivity identity \eqref{eq:frozen_work_placement_sensitivity};
+projector distance, action-space angle, and work provide complementary views
+of the same range variation.  The refined endpoint work values approach
+\begin{equation}
+ \Delta K_p(0)=+3.142\times10^{-4},
+ \qquad
+ \Delta K_p(1)=-3.140\times10^{-4},
+ \label{eq:test1_endpoint_work_values}
+\end{equation}
+while $\Delta K_p(1/2)\simeq-6.28\times10^{-8}$.  The observed sign bracket
+admits a work-neutral root,
+\begin{equation}
+ \Th^\star=0.4999001,
+ \qquad
+ |\Th^\star-1/2|=O(\dt^{1.999}).
+ \label{eq:test1_work_neutral_placement}
+\end{equation}
+The endpoint sign change brackets this root.  Work neutrality has a physical reference here: the
+exact force-free affine solution has constant kinetic energy, so its net
+pressure work is zero.  The convergence of $\Th^\star$ to $1/2$ is therefore a
+pressure-impulse consistency test, not merely a root-finding diagnostic.
+
+The stage hypothesis in \cref{prop:placed_impulse_order} is tested separately
+from accumulated trajectory error.  Starting from the exact affine state at
+$t_n=0.2$, we solve one coupled step for
+$\dt=0.02,0.01,0.005,0.0025$ and compare the returned action with
+$g(t_n+\Th\dt)$.  The rates in \cref{tab:affine_stage_rates} show the needed
+second-order midpoint stage consistency and the generic first-order endpoint
+behavior.  Applying the exact quadratic pressure through the numerical
+action-path operator gives a maximum RMS error
+$8.5\times10^{-16}$, so the rates measure temporal stage placement rather
+than spatial action reproduction.  The action-position errors themselves have
+rates 1.992 at $\Th=1/2$ and 2.994 at $\Th=1$; the first-order endpoint action
+error is therefore traced to the pressure coefficient stage, not to the
+geometric path or the action reconstruction.
+
+\begin{table}[t]
+\centering
+\caption{Exact-start placed-action consistency at $t_n=0.2$.  Here
+$e_{g,\Th}=\norm[M_U]{g_\Th^h-g(t_n+\Th\dt)}$ and $e_{p,\Th}$ is the
+corresponding pressure-coefficient error.}
+\label{tab:affine_stage_rates}
+\begin{tabular}{lrr}
+\toprule
+$\Th$ & rate of $e_{g,\Th}$ & rate of $e_{p,\Th}$ \\
+\midrule
+$0$   & 1.001 & 1.001 \\
+$1/2$ & 1.967 & 1.969 \\
+$1$   & 1.010 & 1.007 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Multistep advancement to $T=0.5$ turns the one-step work separation into the
+cumulative consequence reported in \cref{tab:affine_time_rates}.  Midpoint
+placement is approximately second order for
+this affine solution, whereas terminal placement is approximately first order
+in the principal state and energy errors.  These rates validate
+the fixed-space mechanism in
+\cref{prop:actual_ccop_local_defect}: the force-free stage and trapezoidal
+kinematics cancel the leading configuration-induced velocity defect at
+$\Th=1/2$, while $\Th=1$ retains it.  The separate placed-action rates in
+\cref{tab:affine_stage_rates} verify the hypothesis of
+\cref{prop:placed_impulse_order} on this reproduced affine field.
+
+\begin{table}[t]
+\centering
+\caption{Observed temporal rates for the affine multistep solution.
+The last column is the pressure-coefficient error evaluated at the action
+time, not the error of the placed vector action.}
+\label{tab:affine_time_rates}
+\begin{tabular}{lrrrrrr}
+\toprule
+$\Th$ & $x$ & $u$ & $F$ & $J$ & kinetic energy & $e_{p,\Th}$ \\
+\midrule
+$1/2$ & 2.000 & 2.000 & 2.000 & 2.000 & 2.000 & 1.985 \\
+$1$   & 1.005 & 0.998 & 1.005 & 2.006 & 0.997 & 1.006 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The affine result closes the terminal-target/action-placement mechanism established above.  Within each nonlinear placement,
+$D_T^q[x_T(\Th)]$ selects the represented target on that placement's own
+terminal state.  The frozen projector experiment then holds one such target fixed and isolates
+how $G_\Th$ changes the correction range and hence the oblique projector used
+to reach it.  The placed solves all attain their respective terminal
+pressure-test targets but perform different finite-step pressure work.  The
+multistep rates show that this one-step distinction accumulates into observable
+state and energy differences.  Since the two placements have the same pressure
+space and system dimension, require one pressure solve per Picard iteration,
+and have essentially identical Picard counts in this test, the second-order
+midpoint pressure path requires no additional pressure stage.
+
+
+\section{Case 2: The configuration choice accumulates in long-time affine motion}
+\label{sec:result2}
+
+Case~1 identifies the one-step mechanism.  The second case asks whether that
+finite-step bias accumulates into measurable phase and energy errors when
+spatial reconstruction is deliberately prevented from setting the accuracy
+floor.  We use the two-dimensional conservative affine drop under a central
+potential force.  The initial circular drop has $R=0.5$, the forcing frequency
+is $\Omega=1.2$, and the velocity field is affine,
+\begin{equation}
+ u_0=A_0x,\qquad v_0=-A_0y,
+ \qquad A_0=0.4,
+ \label{eq:case2_affine_initial_velocity}
+\end{equation}
+while the body force is $-\Omega^2x$.  The exact motion remains affine and the
+pressure is quadratic, placing their spatial derivatives within the polynomial
+design spaces of the operators below.  The small moment regularization in the
+archived driver is specified in \cref{sec:case2_implementation_contract}; this
+case is not used to infer a spatial rate.  Writing the principal semi-axes as
+$a(t)$ and $b(t)=R^2/a(t)$, with $\delta=\dot a/a$, gives the scalar reference
+\begin{equation}
+ \dot a=\delta a,
+ \qquad
+ \dot\delta=
+ \frac{R^4/a^4-1}{R^4/a^4+1}
+ \bigl(\delta^2+\Omega^2\bigr),
+ \qquad
+ p_c=\frac{a^2}{2}
+ \bigl(\dot\delta+\delta^2+\Omega^2\bigr).
+ \label{eq:case2_affine_reference}
+\end{equation}
+An independent DOP853 integration of \eqref{eq:case2_affine_reference} supplies
+the semi-axes, centre pressure, phase, and conservative energy exchange through
+$T=30$.  This construction makes the case a long-time test of the pressure
+update rather than of spatial approximation.
+
+\subsection{A same-discretization ISPH workflow comparison}
+
+We compare two pressure workflows at $R/\Delta x=50$ using the same
+quadratic material-derivative discretization.  The archived \texttt{SPH2}
+driver uses a cubic SPH kernel to weight a quadratic MLS fit; the \texttt{MLS2}
+and \texttt{SPH2} strict drivers share this derivative construction and are not
+treated as independent spatial methods.  The pressure is a general nodal field
+with homogeneous Dirichlet boundary values, not a prescribed quadratic ansatz.
+The common fixed material derivatives realize
+\begin{equation}
+ D_\alpha^q=\mathcal R_h^q\!\left[
+ J_\alpha^{-1}\Div_0^h(J_\alpha F_\alpha^{-1}\,\cdot\,)
+ \right],\qquad
+ G_\alpha^{\rm phys}p=\rho_0^{-1}F_\alpha^{-T}\Grad_0^hp.
+ \label{eq:case2_physical_action}
+\end{equation}
+The second operator acts on native physical-pressure coefficients and contains
+no $J_\alpha$ factor.  This convention is identical in both branches.  For a
+spatially uniform affine Jacobian, multiplying $G_\alpha^{\rm phys}$ by
+$J_\alpha$ leaves its range and the frozen projector unchanged, but rescales
+the pressure coefficient.  Such equivalence is not asserted for nonaffine maps.
+
+The baseline is a \emph{same-discretization ISPH (star--star) implementation}:
+it follows the predictor--pressure--corrector workflow of projection-based
+ISPH \cite{CumminsRudman1999,XuStansbyLaurence2009}, with both pressure
+operators evaluated on the pressure-free predicted configuration.  It solves
+\begin{equation}
+ D_\star^qG_\star^{\rm phys}p_\star
+  =\Delta t^{-1}D_\star^qu^\star,\qquad
+ u_\star^T=u^\star-\Delta tG_\star^{\rm phys}p_\star,\qquad
+ x_\star^T=x^\star-\tfrac12\Delta t^2G_\star^{\rm phys}p_\star.
+ \label{eq:case2_same_discretization_isph}
+\end{equation}
+The particles, material stencils, pressure unknowns, boundary labels,
+quadrature, force predictor, step size, and position-correction coefficient
+are shared with CCOP.  This is an implementation-level comparison of the
+ISPH workflow on the present discretization, not a reproduction of every
+variant of ISPH or a comparison with a density/Jacobian state constraint.
+The fixed star--star system is solved by sparse LU.  Its own-anchor residual
+is accepted independently of $D_T^qu_\star^T$, which is retained as a common
+terminal diagnostic without an extra projection.
+
+CCOP instead couples the terminal target to the midpoint action.  For a
+trial pressure $p$, the corrected state is
+\begin{equation}
+ u_T(p)=u^\star-\Delta t\,G_{1/2}^{\rm phys}[x_T(p)]p,
+ \qquad
+ x_T(p)=x^\star-\frac{\Delta t^2}{2}\,G_{1/2}^{\rm phys}[x_T(p)]p,
+ \label{eq:case2_terminal_update}
+\end{equation}
+and the action configuration is
+\begin{equation}
+ x_{1/2}(p)=\frac12\bigl(x^n+x_T(p)\bigr).
+ \label{eq:case2_midpoint_action_configuration}
+\end{equation}
+The pressure is obtained from the nonlinear terminal residual
+\begin{equation}
+ \mathcal R(p)=D_T^q[x_T(p)]u_T(p)=0.
+ \label{eq:case2_terminal_residual}
+\end{equation}
+The CCOP branch follows the pressure-dependent chain
+\begin{equation}
+ p\longmapsto x_{1/2}(p)
+ \longmapsto G_{1/2}^{\rm phys}p
+ \longmapsto (x_T(p),u_T(p))
+ \longmapsto D_T^qu_T(p).
+ \label{eq:case2_residual_chain}
+\end{equation}
+The implemented map is differentiated by a JAX JVP in the matrix-free
+Newton--Krylov solve, including its unrolled geometry iterations.  Acceptance
+separately checks the rebuilt terminal residual, raw positive Jacobians, and
+the kinematic fixed-point defect.  This branch is a pressure-only solver
+variant, not the outer block-Picard implementation used in Cases~1 and~3;
+details are recorded in \cref{sec:case2_implementation_contract}.
+
+\begin{figure}[t]
+\centering
+\safegraphic[0.96\linewidth]{fig_case2_long_time_axes_pressure_energy.pdf}
+\caption{\textbf{Long-time affine accuracy of midpoint pressure action.}
+(a) Major and minor semi-axes against the affine reference.
+(b) Accumulated timing error of successive positive deformation maxima.
+(c) Relative total-energy error for $\Delta t=2\times10^{-3}$ and
+$10^{-3}$.  (d) Kinetic, potential, and total conservative energy exchange.
+(e) Centre-pressure error evaluated at the midpoint action time.
+(f) Error reduction when the time step is halved; the dashed line marks the
+factor four expected from second-order behavior.}
+\label{fig:case2_affine_transfer}
+\end{figure}
+
+Figure~\ref{fig:case2_affine_transfer} shows that the midpoint branch follows
+the analytic semi-axes and centre pressure over eight oscillations.  Halving
+the time step reduces the major-axis, minor-axis, signed-shape, energy, centre-
+pressure, and accumulated phase errors by factors close to four.  Kinetic and
+conservative potential energy exchange periodically, while the total-energy
+error remains bounded within each cycle and returns to the $10^{-10}$ scale at
+$T=30$.
+
+\begin{table}[t]
+\centering
+\caption{Long-time affine diagnostics for the quadratic material-derivative
+realization archived under the SPH2 driver label, at
+$R/\Delta x=50$ and $T=30$.  Here $R_{\rm own}$ is the residual of the anchor
+used by each branch, $R_T$ is the common terminal diagnostic, $e_a$ and $e_b$
+are relative RMS errors of the major and minor semi-axes,
+$E_{\rm err}=\max_t|E/E_0-1|$, and $e_{p_c}$ is the relative RMS centre-pressure
+error at the action time, obtained by the stored local quadratic centre fit.
+ISPH denotes the same-discretization star--star workflow of
+\eqref{eq:case2_same_discretization_isph}.}
+\label{tab:case2_transfer_numbers}
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{lccccccc}
+\toprule
+Branch & $\Delta t$ & $R_{\rm own}$ & $R_T$ & $e_a$ & $e_b$ &
+$E_{\rm err}$ & $e_{p_c}$ \\
+\midrule
+ISPH (star--star) & $2{\times}10^{-3}$ & $1.81{\times}10^{-15}$ & $5.36{\times}10^{-7}$ & $2.40{\times}10^{-3}$ & $2.27{\times}10^{-3}$ & $4.31{\times}10^{-3}$ & $1.93{\times}10^{-3}$ \\
+CCOP midpoint & $2{\times}10^{-3}$ & $1.78{\times}10^{-14}$ & $1.78{\times}10^{-14}$ & $4.13{\times}10^{-6}$ & $4.57{\times}10^{-6}$ & $1.45{\times}10^{-7}$ & $4.13{\times}10^{-6}$ \\
+CCOP midpoint & $1{\times}10^{-3}$ & $1.31{\times}10^{-14}$ & $1.31{\times}10^{-14}$ & $1.03{\times}10^{-6}$ & $1.14{\times}10^{-6}$ & $3.68{\times}10^{-8}$ & $1.00{\times}10^{-6}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:case2_transfer_numbers} compares the two workflows on the same
+spatial discretization.  The ISPH (star--star) branch solves its own anchor to the
+algebraic floor but retains a terminal residual of $5.36\times10^{-7}$ and a
+$4.31\times10^{-3}$ energy drift.  At the same step size, midpoint CCOP closes
+the terminal target to $1.78\times10^{-14}$ and reduces the maximum energy
+error to $1.45\times10^{-7}$.  The full-period error decreases from
+$2.52\times10^{-4}$ for star--star to $1.38\times10^{-6}$ for midpoint CCOP.
+For midpoint CCOP, halving the time step gives observed two-level orders
+$1.998$ for both semi-axes, $2.015$ for the RMS energy error, $2.044$ for the
+centre pressure, and $2.014$ for the accumulated phase error.  The affine
+reference therefore gives a long-time state, pressure, phase, and energy
+comparison in a polynomially reproduced setting.  This pair changes both the
+anchor and the action placement; their individual effects are separated in
+Case~1, not inferred separately from this long-time pair.  Equal pressure
+dimension does not imply equal cost for the frozen LU and nonlinear solves.
+
+\subsection{Relation to other particle formulations}
+
+Particle regularization, continuity corrections, and consistent SPH gradients
+address complementary error sources
+\cite{Wang2019IPST,GotohKhayyerGotoh2024,ZhangHighOrderSPH}.
+Published central-force drop histories are not a matched performance test
+for the present run: for example, the RKGC case in
+\cite[section~5.4]{ZhangHighOrderSPH} uses $A_0/\Omega=1$, whereas here
+$A_0/\Omega=1/3$.  Normalizing energy by $E_0$ does not remove that difference
+in deformation amplitude.  The algorithmic evidence in this case is therefore
+the same-discretization ISPH--CCOP comparison in
+\cref{tab:case2_transfer_numbers}, rather than a ranking of unmatched
+published energy curves.
+
+\section{Case 3: Configuration separation persists under nonaffine material shear}
+\label{sec:result3}
+
+The differential vortex establishes the same construction under a spatially
+varying material map.  On the unit disk, set
+\begin{equation}
+ \Omega(r)=1-r^2,
+ \qquad
+ \Phi_t(X)=\mathcal R\!\left(t\Omega(|X|)\right)X,
+ \qquad
+ u(x)=\Omega(|x|)Kx,
+ \quad
+ K=\begin{pmatrix}0&-1\\1&0\end{pmatrix}.
+ \label{eq:differential_vortex_map}
+\end{equation}
+The boundary is stationary because $\Omega(1)=0$, but different radii rotate
+through different angles.  With $a=t\Omega(|X|)$,
+\begin{equation}
+ F_{\rm ex}(X,t)=\mathcal R(a)
+ \left[I+(KX)\otimes\nabla_Xa\right],
+ \qquad
+ \det F_{\rm ex}=1.
+ \label{eq:differential_vortex_F}
+\end{equation}
+The determinant follows from the matrix determinant lemma and
+$\nabla_Xa\cdot KX=0$.  In a polar frame the nonrotational factor is a shear
+with $s=-2tr^2$, giving
+\begin{equation}
+ \kappa_2(F_{\rm ex})
+ =\left(\frac{\sqrt{s^2+4}+|s|}{2}\right)^2\le5.83
+ \quad\text{at }T=1.
+ \label{eq:differential_vortex_condition}
+\end{equation}
+With the conservative body force $f=-x$, radial momentum balance yields
+\begin{equation}
+  p(r)=\frac12(1-r^2)-\frac16(1-r^2)^3,
+  \label{eq:differential_vortex_pressure}
+\end{equation}
+and direct differentiation verifies
+$(u\cdot\nabla)u=-\Omega(r)^2x=-\nabla p+f$.
+
+\subsection{Boundary-action propagation limits composite consistency}
+
+Prescribing the exact particle positions isolates spatial reconstruction from
+time integration and nonlinear iteration.  The analytic
+reference is evaluated on the same linear action path
+\eqref{eq:linear_action_path} used by the algorithm.  At shear times
+$\chi=0.5,1,1.5$, placements
+$\Th=0,1/2,1$, and four spatial levels
+$h\simeq1/12,1/18,1/24,1/30$, we measure
+\begin{equation}
+  e_F,\qquad e_J,\qquad e_G,\qquad e_D,\qquad e_{DG}.
+  \label{eq:test2_principal_errors}
+\end{equation}
+The action tests include the exact physical pressure and nonsymmetric
+Dirichlet pressures.  The divergence tests include the vortex velocity and an
+independent trace-free field.  The composite $DG$ reference is evaluated
+directly, so the central cross response receives its own convergence test.
+
+At the principal shear $\chi=1$ and $\Th=1/2$, the rates in
+\cref{tab:test2_spatial_rates} show approximately second-order geometry and
+separate operator actions, while the composite response exposes a
+boundary-localized contribution with a lower observed order.  Every
+square response remains full rank, and the minimum Riesz-scaled cross gap over
+the entire prescribed-map study is $0.4615$.
+
+\begin{table}[t]
+\centering
+\caption{Global mass-weighted prescribed-map rates at $\chi=1$ and
+$\Th=1/2$.}
+\label{tab:test2_spatial_rates}
+\begin{tabular}{lrr}
+\toprule
+quantity & fitted rate & finest error \\
+\midrule
+$e_F$ & 2.013 & $4.045\times10^{-3}$ \\
+$e_J$ & 2.281 & $2.753\times10^{-3}$ \\
+$e_G$ & 1.999 & $1.118\times10^{-3}$ \\
+$e_D^q$ & 1.869 & $1.910\times10^{-3}$ \\
+$e_D^{\rm ind}$ & 3.128 & $3.582\times10^{-5}$ \\
+$e_{DG}^q$ & 1.153 & $2.056\times10^{-2}$ \\
+$e_{DG}^{\rm ind}$ & 1.266 & $4.825\times10^{-2}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\safegraphic{\figroot/test2_differential_vortex/figures/part2a_principal_convergence.png}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\safegraphic{\figroot/test2_differential_vortex/figures/part2c_radial_phase.png}
+\end{minipage}
+\caption{Nonaffine extension of the configuration split.  Left: prescribed-map
+convergence of $F,J,G,D$, and $DG$.  Right: exact and computed angular
+displacement as a function of radius for the complete time-stepping evolution.}
+\label{fig:test2_main}
+\end{figure}
+
+The composite rate localizes the leading spatial contribution.  Decomposing
+the independent cross error into a $D$-only term and the error propagated from
+$G$ shows that placed-action propagation dominates near the boundary.  The
+first-layer propagated-$G$ sequence is
+\begin{equation}
+  0.05825,\quad0.05531,\quad0.04809,\quad0.04337,
+  \label{eq:test2_boundary_G_sequence}
+\end{equation}
+Its four-level fitted rate is $0.326$, and an additional $h=1/36$ value is
+$0.03824$.  The corresponding first-layer share of the interior
+pressure-test labels decreases as $0.165,0.111,0.0835,0.0662$, consistent with
+an $O(h)$-thick boundary region.  Localization alone does not explain the
+approximately second-order solution errors: for a regional RMS error of
+order $h^r$, an $O(h)$ mass fraction contributes only a factor $h^{1/2}$
+to its global RMS norm.  The error propagated through the inverse response
+in \eqref{eq:discrete_response_transfer} must be distinguished from this
+operator-action error.  Thus the present data establish a slower composite
+consistency rate, alongside the separately observed smooth-vortex solution
+rate.  They identify boundary propagation of the placed action as the leading
+spatial mechanism limiting the composite response.
+
+\subsection{The inverse response retains accurate smooth pressure actions}
+
+To measure what this consistency defect does to the solved pressure, we
+freeze the same prescribed configurations at $\chi=1$, $\Th=1/2$ and solve
+\begin{equation}
+ A_hp_h=b_{\rm ex},\qquad
+ b_{\rm ex}=\mathcal R_h^q(D_T^{\rm str}\mathcal G_{1/2}q).
+ \label{eq:manufactured_composite_solve}
+\end{equation}
+The right-hand side is the analytic composite action, not $A_hI_h^Qq$.
+No particle, stencil, pressure space, or operator is changed.  For the physical
+radial pressure, \cref{tab:composite_pressure_transfer} shows that the
+near-first-order composite residual gives pressure and final action errors
+with fitted rates 2.183 and 1.990.  The directly measured transfer constant
+$C_{{\rm resp},h}$ decreases over these four clouds.  The total action error is
+the sum in \eqref{eq:solved_action_error_decomposition}, which includes direct
+action error and the inverse-transmitted composite defect.  For these data,
+the inverse-transmitted $D$-only and propagated-action contributions converge
+at rates 1.978 and 1.991, respectively.  The improvement therefore occurs before
+the two terms are combined; it is not explained solely by cancellation in the
+final error or contraction of the boundary region.
+
+\begin{table}[t]
+\centering
+\caption{Frozen manufactured pressure solve at $\chi=1$, $\Th=1/2$.
+Errors are mass-weighted RMS values for the physical pressure.  The action
+error compares $G_{1/2,h}p_h$ with the analytic placed action.
+$C_{{\rm resp},h}$ uses the Riesz scaling in
+\eqref{eq:discrete_response_transfer}.}
+\label{tab:composite_pressure_transfer}
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$1/h$ & $e_{DG}$ & $e_{p,\rm solve}$ & $e_{G p,\rm solve}$ & $C_{{\rm resp},h}$ \\
+\midrule
+12 & $5.925\times10^{-2}$ & $3.487\times10^{-3}$ & $6.867\times10^{-3}$ & 1.154 \\
+18 & $3.826\times10^{-2}$ & $1.408\times10^{-3}$ & $3.052\times10^{-3}$ & 0.964 \\
+24 & $2.718\times10^{-2}$ & $7.570\times10^{-4}$ & $1.725\times10^{-3}$ & 0.871 \\
+30 & $2.056\times10^{-2}$ & $4.727\times10^{-4}$ & $1.108\times10^{-3}$ & 0.822 \\
+\midrule
+Fitted rate & 1.153 & 2.183 & 1.990 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The nonsymmetric pressures $q_1=(1-|X|^2)X_1$ and
+$q_2=(1-|X|^2)X_1X_2$ give solved-pressure rates 2.003 and 2.000,
+and final-action rates 1.988 and 1.961.  All twelve solves have relative
+linear residual below $3.9\times10^{-14}$.  These results support accurate
+response on the tested smooth fields; they do not assert second-order
+$DG$ consistency for arbitrary pressure data or a uniform theorem over
+all shears and placements.
+
+The stronger prescribed shear also retains an invertible composite response.  At
+$\chi=1.5$, where $\max\kappa_2(F_{\rm ex})=10.91$, the midpoint responses
+remain full rank; from $h\simeq1/12$ to $1/30$, the Riesz-scaled gap changes
+from $0.653$ to $1.246$ while $e_{DG}^q$ decreases from $8.17\times10^{-2}$ to
+$2.73\times10^{-2}$.  Thus the cross response remains stably invertible and
+convergent up to the tested condition number.  The full table is given in
+\cref{tab:supp_strong_shear}.
+
+\paragraph{Transport preserves the reconstruction accuracy.}
+
+An exact-increment verification divides $[0,1]$ into
+$4,8,16,32,64$ analytic subintervals.  Relative deformation is reconstructed
+from exact consecutive configurations, while $D$ and $G$ are transported by
+the same matrix recursions used in time stepping.  Recursive and direct
+cumulative operators agree at
+$4.7\times10^{-16}$--$1.43\times10^{-15}$, far below the
+$10^{-2}$--$10^{-3}$ direct spatial reconstruction error.  The complete depth
+study is given in Supplementary Fig.~\ref{fig:supp_transport}.  Recursive
+transport therefore preserves the spatial accuracy established by the direct
+nonaffine reconstruction.
+
+\subsection{Complete nonaffine convergence}
+
+The complete method advances to $T=1$ with its conservative-force
+predictor, nonlinear terminal geometry, placed pressure action, square
+terminal constraint, and full-operator commit.  At fixed $\dt=1/1024$, both
+principal placements converge at approximately second order in the state,
+deformation, radial phase, and independent divergence; selected rates are
+reported in \cref{tab:test2_production_rates}.
+
+\begin{table}[t]
+\centering
+\caption{Spatial rates for the complete differential-vortex evolution.}
+\label{tab:test2_production_rates}
+\begin{tabular}{lrrrrrrr}
+\toprule
+$\Th$ & $x$ & $u$ & $p$ & $F$ & $J$ & phase & independent $D$ \\
+\midrule
+$1/2$ & 1.994 & 1.998 & 2.001 & 1.927 & 2.124 & 1.995 & 2.034 \\
+$1$   & 2.067 & 2.074 & 2.062 & 1.936 & 2.124 & 2.142 & 2.034 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Both placements achieve approximately second-order state accuracy under
+strictly nonaffine material shear.  Together with the prescribed-map and
+exact-increment results, this establishes that the target/action separation,
+cross response, and committed operators survive spatially varying material
+deformation.  The regional decomposition also singles out boundary pressure
+action as the next component to validate on a moving free surface.
+
+The nonaffine case also supplies a fixed-cloud temporal-order check.  At
+$R/h=24$, the exact-error curves for midpoint placement are nearly unchanged
+over $\dt=1/64,1/128,1/256,1/512$.  Using common material labels, successive
+differences $\norm{U_{\dt}-U_{\dt/2}}$ measure approach to a common
+fixed-cloud limit while cancelling its time-independent spatial bias.
+The resulting
+mass-weighted rates are
+\begin{equation}
+\begin{array}{c|ccccc}
+\Th & x & u & F & J & \hbox{radial phase}\\ \hline
+1/2 & 2.000 & 2.000 & 2.000 & 1.993 & 1.998\\
+1   & 0.999 & 1.001 & 1.001 & 1.003 & 0.997.
+\end{array}
+\label{eq:test2_temporal_self_difference_rates}
+\end{equation}
+The midpoint pressure-coefficient self-difference has rate 1.538, while the
+terminal coefficient has rate 1.015.  The stored midpoint differences on
+three clouds are consistent with a mixed $a_h\dt+b_h\dt^2$ norm model:
+$a_h$ decreases at rate 2.007 while $b_h$ changes by less than $0.25\%$
+(\cref{sec:coefficient_mixed_audit}).  This empirical crossover accounts for
+the intermediate fitted coefficient rate.  It does not contradict
+\cref{prop:actual_ccop_local_defect}: the present diagnostic starts from an
+accumulated numerical state and includes the conservative-force predictor,
+whereas that proposition is an exact-start force-free fixed-space result.
+The exact-start action audit in \cref{tab:affine_stage_rates} applies to the
+affine reference.  Here
+\eqref{eq:test2_temporal_self_difference_rates} establishes the measured
+fixed-cloud state self-convergence under nonaffine evolution.
+The successive-difference curves are shown in
+\cref{fig:supp_test2_temporal_self}.
+
+\section{Discussion and conclusions}
+\label{sec:discussion_conclusion}
+
+The central result is a separation of two finite-step choices: terminal
+configuration fixes the incompressibility target, whereas action configuration
+fixes the pressure-correction range.  Their combination gives the scalar cross
+response $D_TG_\Theta$ and its oblique projector.  Configuration assignment thus
+extends the usual pressure-projection architecture without increasing the
+pressure-space dimension or introducing another pressure stage.
+
+The distinction is measurable rather than merely algebraic.  With a fixed
+terminal target, the affine calculations change the correction range and
+pressure work by varying action placement.  The effect persists with a
+mass-adjoint endpoint control, separating configuration-induced obliqueness
+from the endpoint discretization baseline.  The exact-start stage test links
+midpoint placement to the pressure-impulse defect estimate.  In long-time
+affine motion, the same-discretization ISPH star--star comparison then shows
+how accurate predictor closure can coexist with accumulated terminal mismatch.
+
+Nonaffine shear establishes a second, complementary distinction: consistency
+of $G_h$, consistency of $D_hG_h$, and accuracy of the solved action are
+different measurements.  Boundary propagation lowers the composite rate,
+yet analytic-forcing pressure solves recover approximately second-order
+actions for the three tested smooth pressures.  The decomposition in
+\eqref{eq:solved_action_error_decomposition} identifies the inverse-transmitted
+defect that connects these observations.  This provides a concrete diagnostic
+for improving boundary actions without confusing algebraic closure with
+spatial accuracy.
+
+The analysis and calculations concern smooth two-dimensional inviscid flows.
+Discrete closure is in the selected pressure-test space, not an assertion of
+exact Jacobian closure.  Midpoint temporal accuracy requires stage consistency,
+and the sampled response gaps are finite-dimensional stability evidence.  The
+transported Piola rows converge on constant physical velocities but do not
+annihilate them algebraically on a finite nonaffine cloud; the resulting
+translation-equivariance defect is therefore reported as a spatial
+consistency error rather than hidden by an additional projection.
+The matched ISPH comparison isolates a workflow change; comparisons with
+higher-order time integrators require separate accuracy--cost measurements.
+Within these conditions, CCOP supplies an explicit configuration choice whose
+effect is not visible in the terminal residual alone: equally accurate closure
+can accompany different finite-step pressure-work and deformation paths.
+
+\appendix
+\section{Exact-reference calculations}
+\label{app:exact_references}
+
+\subsection{Affine scalar reduction}
+
+For $A=\diag(a,a^{-1})$,
+$\dot A=\diag(\dot a,-\dot a/a^2)$ and
+$\det\dot A=-\dot a^2/a^2$.  Since
+$|A|_F^2=a^2+a^{-2}$,
+\[
+ \lambda=-\frac{2\det\dot A}{|A|_F^2}
+ =\frac{2\dot a^2}{a^4+1}.
+\]
+The first diagonal component of $\ddot A=\lambda\cof A$ gives
+$\ddot a=\lambda/a$.  Conservation of $|\dot A|_F^2/2=1$ selects the positive
+branch in \eqref{eq:affine_scalar_reference}.
+
+\subsection{Differential-vortex determinant and pressure}
+
+Write
+$F=\mathcal R(a)(I+(KX)\otimes\nabla a)$.  The matrix determinant lemma gives
+$\det F=1+\nabla a\cdot KX=1$.  For
+$u=\Omega(r)Kx$, the radial acceleration is
+$(u\cdot\nabla)u=-\Omega(r)^2x$.  The momentum balance with $f=-x$ requires
+$p_r=r(\Omega(r)^2-1)$.  Integrating from $r$ to 1 gives
+\eqref{eq:differential_vortex_pressure}.
+
+\section{Operator and reproducibility audits}
+
+\subsection{Case 2: same-discretization ISPH implementation contract}
+\label{sec:case2_implementation_contract}
+
+The Case~2 archives contain 8037 particles, including 314 material boundary
+labels and 7723 interior pressure coefficients.  They record $R=0.5$,
+$\Delta x=0.01$, kernel length $0.013$, $\rho_0=1$, $A_0=0.4$, and
+$\Omega=1.2$.  The strict drivers are
+\path{card_piola_pressure_matrixfree_jax_v12_sph2_three_branch_strict.py}
+and its \texttt{mls2} counterpart.  In the audited versions, both invoke
+the same \texttt{build\_mls\_derivative\_operator} function for the material
+derivatives used in $F,D$, and $G$.  The \texttt{SPH2} label identifies the
+archive, not an independently verified conservative SPH pair.
+
+For the unscaled basis
+$[1,\xi,\eta,\xi^2/2,\xi\eta,\eta^2/2]$, the function uses cubic-kernel
+weights within twice the kernel length, including the center.  A nearest-point
+fallback supplies at least ten labels; a stencil with fewer than six
+independent moments is rejected.  The derivative weights are extracted from
+\begin{equation}
+ (P_i^TW_iP_i+\lambda_iI)^{-1}P_i^TW_i,\qquad
+ \lambda_i=\epsilon_{\rm mom}
+ \left(\frac{\operatorname{tr}(P_i^TW_iP_i)}{6}+1\right).
+ \label{eq:case2_moment_convention}
+\end{equation}
+The audited default is $\epsilon_{\rm mom}=10^{-12}$.  This is a local
+moment regularization, distinct from a shift of the pressure matrix.
+Consequently polynomial reproduction is subject to that perturbation and
+conditioning, not an unconditional roundoff identity.  The reference
+derivatives and boundary labels remain fixed throughout the run; the geometry
+and Piola divergence in \eqref{eq:case2_physical_action} are assembled from
+the current total material map.  They are not reconstructed from an unrelated
+current-cloud fit.
+
+The \texttt{star-star} branch solves the square frozen system
+\eqref{eq:case2_same_discretization_isph}.  The \texttt{ccop-midpoint} branch
+uses terminal divergence and midpoint physical-pressure action; the available
+\texttt{terminal-terminal} branch uses terminal divergence and terminal action.
+Only the first two have long-time histories in
+\cref{tab:case2_transfer_numbers}.  Selecting an action position alone is not
+equivalent to selecting the star--star workflow, because its target must also
+be $D_\star^q$.
+
+The audited defaults use fp64, 30 unrolled geometry iterations per pressure
+evaluation, automatic-differentiation JVPs, a relative nonlinear residual
+target $10^{-9}$, a frozen-star linear target $10^{-10}$, and a rebuilt
+kinematic RMS defect divided by $\Delta x$ below $10^{-10}$.  Accepted raw
+Jacobians must exceed $10^{-6}$; the small safe determinant in trial evaluation
+does not replace this raw accepted-state check.  These are distinct linear
+and nonlinear acceptance rules, not equal iteration counts or equal cost.
+In the stored midpoint runs, the maximum rebuilt relative residual is below
+$4.1\times10^{-12}$ and the kinematic RMS defect is below $9.0\times10^{-17}$.
+The NPZ files do not retain the historical source hash, moment parameter, or
+complete solver configuration, so the current defaults cannot by themselves
+certify the exact original command.  The source/data fingerprint audit records
+this provenance boundary explicitly.
+
+\subsection{Nonaffine coefficient self-difference crossover}
+\label{sec:coefficient_mixed_audit}
+
+For the three successive midpoint pressure differences at each fixed cloud,
+the stored diagnostic fits the scalar RMS values to
+$a_h\dt+b_h\dt^2$.  At $1/h=12,18,24$, respectively, the fitted coefficients
+are
+\[
+ a_h=(1.1793,\,0.52165,\,0.29354)\times10^{-3},\qquad
+ b_h=(0.044327,\,0.044287,\,0.044218).
+\]
+The effective rates are 1.234, 1.402, and 1.538; relative fit residuals are
+below $1.9\times10^{-4}$.  The observed $h$-rate of $a_h$ is 2.007.
+This three-point, two-parameter norm fit is consistent with a space--time
+crossover.  It is not a vector expansion of the pressure or a proof that the
+nonaffine multiplier automatically represents a time-averaged pressure.
+
+\label{app:operator_audits}
+
+The pressure-space and solver information omitted from the principal result
+tables is retained here and in the machine-readable output.  Across the two
+tested operator families, the square responses remain full rank and the
+Riesz-scaled gaps in \cref{tab:supp_riesz_gap_summary} stay separated from
+zero.  These are empirical bounds on the stated cloud and deformation
+families, not a universal inf--sup claim.
+
+\begin{table}[ht]
+\centering
+\caption{Minimum measured Riesz-scaled cross-response gaps.}
+\label{tab:supp_riesz_gap_summary}
+\begin{tabular}{lr}
+\toprule
+operator family & $\min\beta_{T,\Th,h}$ \\
+\midrule
+Test 1 affine pressure spaces & 0.7959 \\
+Case 3 prescribed nonaffine maps & 0.4615 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The affine disk
+levels contain 423, 973, 1749, and 2751 interior pressure coefficients.  All
+responses are full rank.  Their raw relative singular gaps decrease from
+$3.85\times10^{-3}$ to $1.23\times10^{-3}$ and raw condition numbers increase
+from 260 to 814; these unscaled quantities are reproducibility data, not the
+stability norm used in the analysis.  The realized endpoint projector has
+$\norm[M_U]{\Pi_T}=1.61863$ and a measured mass-adjoint defect 0.2484,
+confirming that endpoint orthogonality is unavailable for this pair.
+The maximum $D_T$-anchored residual in the anchor sweep is
+$4.18\times10^{-15}$.  Across the 21 frozen placements, the maximum relative
+closure, idempotence, and action-annihilation defects are
+$1.17\times10^{-15}$, $1.95\times10^{-15}$, and $9.41\times10^{-16}$,
+respectively.  These values verify the algebra and direct solve; they are not
+used as spatial-accuracy evidence.
+
+In the differential-vortex prescribed-map study, the minimum Riesz-scaled
+cross gap over all configurations is 0.4615.  The exact-increment transport
+depth audit is summarized in \cref{fig:supp_transport}.
+
+\begin{table}[ht]
+\centering
+\caption{Prescribed-map midpoint audit at the stronger shear $\chi=1.5$.
+Here $\max\kappa_2(F_{\rm ex})=10.91$ and the exact relative-deformation
+margin is $0.25$ on every level.}
+\label{tab:supp_strong_shear}
+\begin{tabular}{rrrrrr}
+\toprule
+$R/h$ & $e_F$ & $e_G$ & $e_D^q$ & $e_{DG}^q$ & $\beta_{T,1/2,h}$ \\
+\midrule
+12 & $5.374\mathrm e{-2}$ & $8.508\mathrm e{-3}$ & $1.610\mathrm e{-2}$ & $8.167\mathrm e{-2}$ & 0.653 \\
+18 & $2.363\mathrm e{-2}$ & $3.816\mathrm e{-3}$ & $7.626\mathrm e{-3}$ & $5.129\mathrm e{-2}$ & 0.973 \\
+24 & $1.325\mathrm e{-2}$ & $2.153\mathrm e{-3}$ & $4.504\mathrm e{-3}$ & $3.615\mathrm e{-2}$ & 1.260 \\
+30 & $8.464\mathrm e{-3}$ & $1.377\mathrm e{-3}$ & $2.985\mathrm e{-3}$ & $2.727\mathrm e{-2}$ & 1.246 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The constant-field check in \cref{sec:constant_field_diagnostics} was applied
+to the same prescribed nonaffine map at $\chi=1$ and to the midpoint action
+path.  Table~\ref{tab:supp_constant_translation_audit} reports the larger of
+the two Cartesian constant-vector defects.  The second column is a terminal
+constraint-space RMS; the third is the mass-weighted velocity defect of the
+frozen projector under addition of a unit translation.  No corrective
+projection is applied before either measurement.
+
+\begin{table}[ht]
+\centering
+\caption{Constant-vector and frozen translation-equivariance audit for the
+prescribed nonaffine map at $\chi=1$, $\Th=1/2$.}
+\label{tab:supp_constant_translation_audit}
+\begin{tabular}{rrr}
+\toprule
+$1/h$ & $\max_k\norm[M_Z,{\rm rms}]{D_T^qe_k}$
+      & $\max_k\norm[M_U,{\rm rms}]{G_\Th(D_T^qG_\Th)^{-1}D_T^qe_k}$ \\
+\midrule
+12 & $1.181\times10^{-2}$ & $1.195\times10^{-3}$ \\
+18 & $7.054\times10^{-3}$ & $4.915\times10^{-4}$ \\
+24 & $4.900\times10^{-3}$ & $2.628\times10^{-4}$ \\
+30 & $3.504\times10^{-3}$ & $1.572\times10^{-4}$ \\
+\midrule
+fitted rate & 1.315 & 2.208 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pressure solve and projector identities remain algebraically exact for
+their represented rows, but the first column confirms that Piola matrix
+transport alone does not create an exact discrete geometric-conservation law.
+The induced frozen translation error nevertheless decreases approximately
+quadratically over this cloud family.  This is an operator-level translation
+check.  Because the differential vortex contains the origin-fixed force
+$f=-x$, it is not itself a Galilean-invariant trajectory benchmark.
+
+\begin{figure}[ht]
+\centering
+\safegraphic[0.72\linewidth]{\figroot/test2_differential_vortex/figures/part2b_transport_depth.png}
+\caption{Exact-increment transport audit.  Recursive/direct operator defects
+remain at roundoff through 64 subintervals, whereas direct spatial
+reconstruction sets the visible error.}
+\label{fig:supp_transport}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\safegraphic[0.88\linewidth]{\figroot/test2_differential_vortex/figures/part2c_temporal_self_convergence.png}
+\caption{Fixed-cloud temporal self differences for the complete nonaffine
+evolution.  Midpoint state and geometry differences follow the second-order
+path, whereas terminal differences follow the first-order path; the exact
+error itself is spatial-floor limited on this cloud.}
+\label{fig:supp_test2_temporal_self}
+\end{figure}
+
+The deterministic seed is 20260728 for Cases~1 and~3.  The principal drivers
+and auxiliary audit scripts are
+\begin{itemize}[leftmargin=2em]
+\item \path{test1_affine_free_boundary.py},
+\item \path{card_piola_pressure_matrixfree_jax_v12_sph2_three_branch_strict.py}
+and its \texttt{mls2} counterpart for Case~2,
+\item \path{test2_differential_vortex.py},
+\item \path{constant_translation_audit.py}.
+\end{itemize}
+The drivers generate complete JSON and per-iteration histories.  Compact CSV
+tables, configuration records, reports, and figures are archived below
+\path{results/test1_affine_free_boundary},
+\path{results/test2_affine_long_time},
+and \path{results/test2_differential_vortex}.  The unified regression command is
+\begin{verbatim}
+python -m pytest test_test1_affine_free_boundary.py \
+  test_test2_differential_vortex.py -q
+\end{verbatim}
+
+\begin{thebibliography}{99}
+
+
+\bibitem{MarsdenWest2001}
+J.~E. Marsden and M.~West,
+Discrete mechanics and variational integrators,
+\emph{Acta Numer.}, 10 (2001), pp.~357--514.
+
+\bibitem{Andersen1983}
+H.~C. Andersen,
+RATTLE: A ``velocity'' version of the SHAKE algorithm for molecular dynamics
+calculations,
+\emph{J. Comput. Phys.}, 52 (1983), pp.~24--34,
+\url{https://doi.org/10.1016/0021-9991(83)90014-1}.
+
+\bibitem{Betsch2005}
+P.~Betsch,
+The discrete null space method for the energy consistent integration of
+constrained mechanical systems: Part I: Holonomic constraints,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 194 (2005), pp.~5159--5190,
+\url{https://doi.org/10.1016/j.cma.2005.01.004}.
+
+\bibitem{SuzukiKoshizukaOka2007}
+Y.~Suzuki, S.~Koshizuka, and Y.~Oka,
+Hamiltonian moving-particle semi-implicit (HMPS) method for incompressible
+fluid flows,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 196 (2007), pp.~2876--2894,
+\url{https://doi.org/10.1016/j.cma.2006.12.006}.
+
+
+\bibitem{ElleroSerranoEspanol2007}
+M.~Ellero, M.~Serrano, and P.~Espa\~nol,
+Incompressible smoothed particle hydrodynamics,
+\emph{J. Comput. Phys.}, 226 (2007), pp.~1731--1752,
+\url{https://doi.org/10.1016/j.jcp.2007.06.019}.
+
+\bibitem{NairTomar2015}
+P.~Nair and G.~Tomar,
+Volume conservation issues in incompressible smoothed particle hydrodynamics,
+\emph{J. Comput. Phys.}, 297 (2015), pp.~689--699,
+\url{https://doi.org/10.1016/j.jcp.2015.05.042}.
+
+\bibitem{BasicEtAl2022}
+J.~Ba\v{s}i\'c, N.~Degiuli, B.~Blagojevi\'c, and D.~Ban,
+Lagrangian differencing dynamics for incompressible flows,
+\emph{J. Comput. Phys.}, 462 (2022), 111198.
+
+\bibitem{GotohKhayyerGotoh2024}
+T.~Gotoh, A.~Khayyer, and H.~Gotoh,
+Enhanced schemes for resolution of the continuity equation in
+projection-based SPH,
+\emph{Engrg. Anal. Bound. Elem.}, 166 (2024), 105848.
+
+\bibitem{Matsunaga2025}
+T.~Matsunaga,
+High-order time-marching schemes for incompressible flow in particle methods,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 447 (2025), 118395.
+
+\bibitem{MatsunagaKoshizuka2022}
+T.~Matsunaga and S.~Koshizuka,
+Stabilized LSMPS method for complex free-surface flow simulation,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 389 (2022), 114416.
+
+\bibitem{SuchdeEtAl2025}
+P.~Suchde, C.~Leith\"auser, J.~Kuhnert, and S.~P.~A. Bordas,
+Volume and mass conservation in Lagrangian meshfree methods,
+\emph{Int. J. Numer. Methods Engrg.}, 126 (2025), e7657.
+
+\bibitem{ZhangEtAl2024}
+N.~Zhang, S.~Yan, Q.~Ma, A.~Khayyer, X.~Guo, and X.~Zheng,
+A consistent second order ISPH for free surface flow,
+\emph{Comput. Fluids}, 274 (2024), 106224.
+
+\bibitem{AlmgrenBellCrutchfield2000}
+A.~S. Almgren, J.~B. Bell, and W.~Y. Crutchfield,
+Approximate projection methods: Part I. Inviscid analysis,
+\emph{SIAM J. Sci. Comput.}, 22 (2000), pp.~1139--1159.
+
+\bibitem{AlmgrenBellSzymczak1996}
+A.~S. Almgren, J.~B. Bell, and W.~G. Szymczak,
+A numerical method for the incompressible Navier--Stokes equations based on an
+approximate projection,
+\emph{SIAM J. Sci. Comput.}, 17 (1996), pp.~358--369.
+
+\bibitem{Chorin1968}
+A.~J. Chorin,
+Numerical solution of the Navier--Stokes equations,
+\emph{Math. Comp.}, 22 (1968), pp.~745--762.
+
+\bibitem{CumminsRudman1999}
+S.~J. Cummins and M.~Rudman,
+An SPH projection method,
+\emph{J. Comput. Phys.}, 152 (1999), pp.~584--607.
+
+\bibitem{DiLiTangZhang2005}
+Y.~Di, R.~Li, T.~Tang, and P.~Zhang,
+Moving mesh finite element methods for the incompressible Navier--Stokes
+equations,
+\emph{SIAM J. Sci. Comput.}, 26 (2005), pp.~1036--1056.
+
+\bibitem{DoneaHuerta2004}
+J.~Donea, A.~Huerta, J.-P. Ponthot, and A.~Rodriguez-Ferran,
+Arbitrary Lagrangian--Eulerian methods,
+in \emph{Encyclopedia of Computational Mechanics}, Wiley, Chichester, 2004.
+
+\bibitem{LesoinneFarhat1996}
+M.~Lesoinne and C.~Farhat,
+Geometric conservation laws for flow problems with moving boundaries and
+deformable meshes, and their impact on aeroelastic computations,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 134 (1996), pp.~71--90,
+\url{https://doi.org/10.1016/0045-7825(96)01028-6}.
+
+\bibitem{GuillardFarhat2000}
+H.~Guillard and C.~Farhat,
+On the significance of the geometric conservation law for flow computations
+on moving meshes,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 190 (2000), pp.~1467--1482,
+\url{https://doi.org/10.1016/S0045-7825(00)00173-0}.
+
+\bibitem{FormaggiaNobile2004}
+L.~Formaggia and F.~Nobile,
+Stability analysis of second-order time accurate schemes for ALE--FEM,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 193 (2004), pp.~4097--4116,
+\url{https://doi.org/10.1016/j.cma.2003.09.028}.
+
+\bibitem{PavlovEtAl2011}
+D.~Pavlov, P.~Mullen, Y.~Tong, E.~Kanso, J.~E. Marsden, and M.~Desbrun,
+Structure-preserving discretization of incompressible fluids,
+\emph{Physica D}, 240 (2011), pp.~443--458,
+\url{https://doi.org/10.1016/j.physd.2010.10.012}.
+
+\bibitem{GawlikEtAl2011}
+E.~S. Gawlik, P.~Mullen, D.~Pavlov, J.~E. Marsden, and M.~Desbrun,
+Geometric, variational discretization of continuum theories,
+\emph{Physica D}, 240 (2011), pp.~1724--1760,
+\url{https://doi.org/10.1016/j.physd.2011.07.011}.
+
+\bibitem{GuermondMinevShen2006}
+J.-L. Guermond, P.~Minev, and J.~Shen,
+An overview of projection methods for incompressible flows,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 195 (2006), pp.~6011--6045.
+
+\bibitem{KhayyerGotoh2011}
+A.~Khayyer and H.~Gotoh,
+Enhancement of stability and accuracy of the moving particle semi-implicit
+method,
+\emph{J. Comput. Phys.}, 230 (2011), pp.~3093--3118.
+
+\bibitem{KoshizukaOka1996}
+S.~Koshizuka and Y.~Oka,
+Moving-particle semi-implicit method for fragmentation of incompressible
+fluid,
+\emph{Nucl. Sci. Eng.}, 123 (1996), pp.~421--434.
+
+\bibitem{MirzaeiSchabackDehghan2012}
+D.~Mirzaei, R.~Schaback, and M.~Dehghan,
+On generalized moving least squares and diffuse derivatives,
+\emph{IMA J. Numer. Anal.}, 32 (2012), pp.~983--1000.
+
+\bibitem{RobertsShkollerSideris2020}
+J.~Roberts, S.~Shkoller, and T.~C. Sideris,
+Affine motion of 2D incompressible fluids surrounded by vacuum and flows in
+$\mathrm{SL}(2,\R)$,
+\emph{Comm. Math. Phys.}, 375 (2020), pp.~1003--1040.
+
+\bibitem{Temam1969}
+R.~Temam,
+Sur l'approximation de la solution des equations de Navier--Stokes par la
+methode des pas fractionnaires II,
+\emph{Arch. Ration. Mech. Anal.}, 33 (1969), pp.~377--385.
+
+\bibitem{TraskMaxeyHu2018}
+N.~Trask, M.~Maxey, and X.~Hu,
+A compatible high-order meshless method for the Stokes equations with
+applications to suspension flows,
+\emph{J. Comput. Phys.}, 355 (2018), pp.~310--326.
+
+\bibitem{TraskPeregoBochev2017}
+N.~Trask, M.~Perego, and P.~Bochev,
+A high-order staggered meshless method for elliptic problems,
+\emph{SIAM J. Sci. Comput.}, 39 (2017), pp.~A479--A502.
+
+\bibitem{XuStansbyLaurence2009}
+R.~Xu, P.~Stansby, and D.~Laurence,
+Accuracy and stability in incompressible SPH (ISPH) based on the projection
+method and a new approach,
+\emph{J. Comput. Phys.}, 228 (2009), pp.~6703--6725.
+
+
+\bibitem{Wang2019IPST}
+P.-P.~Wang, Z.-F.~Meng, A.-M.~Zhang, F.-R.~Ming, and P.-N.~Sun,
+Improved particle shifting technology and optimized free-surface detection
+method for free-surface flows in smoothed particle hydrodynamics,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 357 (2019), 112580,
+\url{https://doi.org/10.1016/j.cma.2019.112580}.
+
+\bibitem{ZhangHighOrderSPH}
+B.~Zhang, N.~A. Adams, and X.~Y. Hu,
+Towards high-order consistency and convergence of conservative SPH
+approximations,
+\emph{Comput. Methods Appl. Mech. Engrg.}, 433 (2025), 117484,
+\url{https://doi.org/10.1016/j.cma.2024.117484}.
+
+\end{thebibliography}
+
+\end{document}

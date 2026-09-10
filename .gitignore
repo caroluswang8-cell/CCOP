@@ -1,0 +1,12 @@
+__pycache__/
+.pytest_cache/
+.venv/
+*.py[cod]
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.npz
+results/**/test*_results.json
+
