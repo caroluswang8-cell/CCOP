@@ -128,6 +128,27 @@ def test_compatible_endpoint_projector_is_mass_orthogonal() -> None:
     assert abs(np.linalg.norm(weighted, 2) - 1.0) < 2.0e-12
 
 
+def test_resolved_affine_quadratic_green_compatibility() -> None:
+    disc = affine.build_discretization(12)
+    case = _representative_step()
+    terminal = case["terminal_geometry"]
+    action = affine.transport_action_sparse(
+        disc.G0, terminal["inverse"], terminal["J"]
+    )
+    audit = affine.green_compatibility_audit(
+        disc,
+        case["D_q_terminal"],
+        action,
+        terminal,
+        case["position"],
+    )
+    assert audit["full_space_relative_frobenius"] > 1.0e-2
+    assert (
+        audit["restricted_affine_quadratic"]["riesz_normalized_supremum"]
+        < 2.0e-13
+    )
+
+
 def test_placed_action_stage_consistency() -> None:
     audit = affine.placed_action_stage_consistency(layers=12)
     assert audit["passed"]

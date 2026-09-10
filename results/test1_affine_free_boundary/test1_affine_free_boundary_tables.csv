@@ -9963,3 +9963,5 @@ T,0.005,,30,terminal_residual_rms,,,anchor,,,0.5,,2.013616612383648e-15
 ,0.00625,0.5,30,kinetic_drift,2939,2751,multistep,,80,1.0,0.5,-0.0017016855597741243
 ,0.00625,0.5,30,area_J_relative_error,2939,2751,multistep,,80,1.0,0.5,-3.1261700371405743e-06
 ,0.00625,0.5,30,terminal_constraint_rms,2939,2751,multistep,,80,1.0,0.5,1.7412356006885747e-15
+,,,12,full_space_green_compatibility_relative_frobenius,,,projector,,,,,0.2484106598495428
+,,,12,restricted_affine_quadratic_green_compatibility,,,projector,,,,,2.257943701956664e-16

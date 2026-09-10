@@ -1276,6 +1276,106 @@ def power_norm(matrix: np.ndarray, iterations: int = 60) -> float:
     return float(value)
 
 
+def green_compatibility_audit(
+    disc: DiskDiscretization,
+    d_q: sp.spmatrix,
+    action: sp.spmatrix,
+    terminal_geometry: dict[str, np.ndarray],
+    terminal_position: np.ndarray,
+) -> dict[str, Any]:
+    """Measure full-space and resolved-subspace discrete Green compatibility.
+
+    The full-space quantity is the relative Frobenius mismatch between the
+    independently constructed point-value divergence and the point-value
+    representative induced by the mass adjoint of the pressure action.  It is
+    not a truncation error for either operator.  The restricted quantity is
+    the Riesz-normalized bilinear mismatch on the Case 1 solution space:
+    trace-free affine velocities and the quadratic homogeneous-Dirichlet
+    pressure on the disk.
+    """
+    terminal_test_mass = (
+        disc.volume[disc.interior] * terminal_geometry["J"][disc.interior]
+    )
+    velocity_mass = np.repeat(disc.volume, 2)
+    pressure_mass = disc.volume[disc.interior]
+    d_adjoint = (
+        -sp.diags(1.0 / terminal_test_mass)
+        @ action.T
+        @ sp.diags(velocity_mass)
+    ).tocsr()
+    full_relative_frobenius = float(
+        spla.norm(d_q - d_adjoint)
+        / max(spla.norm(d_q), 1.0e-300)
+    )
+
+    # A basis for all two-dimensional trace-free affine Eulerian velocities.
+    affine_generators = (
+        np.asarray([[1.0, 0.0], [0.0, -1.0]]),
+        np.asarray([[0.0, 1.0], [0.0, 0.0]]),
+        np.asarray([[0.0, 0.0], [1.0, 0.0]]),
+    )
+    velocity_basis = np.column_stack(
+        [
+            (terminal_position @ generator.T).ravel()
+            for generator in affine_generators
+        ]
+    )
+    pressure_basis = (
+        1.0 - np.sum(disc.points**2, axis=1)
+    )[disc.interior, None]
+    pairing_mismatch = (
+        velocity_basis.T
+        @ (velocity_mass[:, None] * (action @ pressure_basis))
+        + (d_q @ velocity_basis).T
+        @ (terminal_test_mass[:, None] * pressure_basis)
+    )
+    velocity_gram = velocity_basis.T @ (
+        velocity_mass[:, None] * velocity_basis
+    )
+    pressure_gram = pressure_basis.T @ (
+        pressure_mass[:, None] * pressure_basis
+    )
+    restricted_supremum = float(
+        np.sqrt(
+            (
+                pairing_mismatch.T
+                @ np.linalg.solve(velocity_gram, pairing_mismatch)
+                / pressure_gram
+            )[0, 0]
+        )
+    )
+    restricted_by_velocity_basis = (
+        np.abs(pairing_mismatch[:, 0])
+        / np.sqrt(np.diag(velocity_gram) * pressure_gram[0, 0])
+    )
+    return {
+        "definition": (
+            "||D_T^q-D_T^ad||_F/||D_T^q||_F, with "
+            "D_T^ad=-M_Z^{-1} G_T^T M_U"
+        ),
+        "norm": "Frobenius",
+        "denominator": "||D_T^q||_F",
+        "full_space_relative_frobenius": full_relative_frobenius,
+        "restricted_affine_quadratic": {
+            "definition": (
+                "sup |u^T M_U G_T p + p^T M_Z D_T^q u| / "
+                "(||u||_M_U ||p||_M_Q)"
+            ),
+            "velocity_space": "trace-free affine Eulerian velocities",
+            "pressure_space": (
+                "span{1-|X|^2}, the quadratic homogeneous-Dirichlet disk pressure"
+            ),
+            "riesz_normalized_supremum": restricted_supremum,
+            "values_by_velocity_basis": restricted_by_velocity_basis,
+        },
+        "interpretation": (
+            "the full-space value measures same-configuration discrete "
+            "Green compatibility, not D, G, pressure-solve, or projector error"
+        ),
+        "D_T_ad": d_adjoint,
+    }
+
+
 def projector_audit(raw_sweeps: dict[int, list[dict[str, Any]]]) -> dict[str, Any]:
     layers = min(LAYERS)
     disc = build_discretization(layers)
@@ -1294,18 +1394,17 @@ def projector_audit(raw_sweeps: dict[int, list[dict[str, Any]]]) -> dict[str, An
         g_terminal @ lu_terminal.solve(d_q.toarray())
     )
     q_terminal, _ = np.linalg.qr(root_mass[:, None] * g_terminal.toarray())
-    endpoint_test_volume = (
-        disc.volume[disc.interior] * terminal_geometry["J"][disc.interior]
+    green_compatibility = green_compatibility_audit(
+        disc,
+        d_q,
+        g_terminal,
+        terminal_geometry,
+        base["position"],
     )
-    endpoint_adjoint = (
-        -sp.diags(1.0 / endpoint_test_volume)
-        @ g_terminal.T
-        @ sp.diags(np.repeat(disc.volume, 2))
-    )
-    endpoint_green_defect = float(
-        spla.norm(d_q - endpoint_adjoint)
-        / max(spla.norm(d_q), 1.0e-300)
-    )
+    endpoint_adjoint = green_compatibility["D_T_ad"]
+    endpoint_green_defect = green_compatibility[
+        "full_space_relative_frobenius"
+    ]
     # Auxiliary compatible control.  This is deliberately not the production
     # divergence.  It replaces the endpoint test functional by the exact
     # mass-adjoint of G_T, so the theta=T projector is an M_U-orthogonal
@@ -1431,6 +1530,11 @@ def projector_audit(raw_sweeps: dict[int, list[dict[str, Any]]]) -> dict[str, An
         "source_configuration_theta": 0.5,
         "endpoint_projector_mass_norm": endpoint_row["projector_mass_norm"],
         "endpoint_green_adjoint_relative_defect": endpoint_green_defect,
+        "same_configuration_green_compatibility": {
+            key: value
+            for key, value in green_compatibility.items()
+            if key != "D_T_ad"
+        },
         "interpretation": (
             "endpoint mass norm is the discretization baseline; theta-dependent "
             "distance and angle are the configuration-placement increments"
@@ -2080,6 +2184,27 @@ def csv_rows(results: dict[str, Any]) -> list[dict[str, Any]]:
                     },
                 ]
             )
+    green = results["projector_audit"][
+        "same_configuration_green_compatibility"
+    ]
+    rows.extend(
+        [
+            {
+                "section": "projector",
+                "layers": results["projector_audit"]["layers"],
+                "metric": "full_space_green_compatibility_relative_frobenius",
+                "value": green["full_space_relative_frobenius"],
+            },
+            {
+                "section": "projector",
+                "layers": results["projector_audit"]["layers"],
+                "metric": "restricted_affine_quadratic_green_compatibility",
+                "value": green["restricted_affine_quadratic"][
+                    "riesz_normalized_supremum"
+                ],
+            },
+        ]
+    )
     for row in results["placed_action_stage_consistency"]["rows"]:
         if not row["passed"]:
             continue
@@ -2676,11 +2801,19 @@ def write_report(results: dict[str, Any]) -> None:
             (
                 f"Endpoint `||Pi_T||_M` = "
                 f"{results['projector_audit']['endpoint_projector_mass_norm']:.6g}; "
-                f"endpoint Green/adjoint relative defect = "
-                f"{results['projector_audit']['endpoint_green_adjoint_relative_defect']:.3e}. "
-                "The endpoint norm is therefore reported as a discretization baseline; "
-                "only `||Pi_theta-Pi_T||_M` and the action-space angle are attributed "
+                f"same-configuration Green-compatibility mismatch = "
+                f"{results['projector_audit']['endpoint_green_adjoint_relative_defect']:.3e}, "
+                "defined by `||D_T^q-D_T^ad||_F/||D_T^q||_F`. "
+                "This is a full-space compatibility baseline, not a divergence, "
+                "gradient, pressure-solve, or projector error. "
+                "Only `||Pi_theta-Pi_T||_M` and the action-space angle are attributed "
                 "to placement."
+            ),
+            (
+                "On the trace-free affine velocity space paired with the quadratic "
+                "homogeneous-Dirichlet disk pressure, the Riesz-normalized bilinear "
+                "Green mismatch is "
+                f"`{results['projector_audit']['same_configuration_green_compatibility']['restricted_affine_quadratic']['riesz_normalized_supremum']:.3e}`."
             ),
             (
                 "In the auxiliary mass-adjoint endpoint control, "

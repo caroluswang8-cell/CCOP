@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "count": 9,
+  "count": 10,
   "tests": [
     {
       "name": "test_affine_map_reconstruction",
@@ -41,6 +41,11 @@
       "name": "test_reference_ode_invariants",
       "passed": true,
       "elapsed_seconds": 0.0016518000047653913
+    },
+    {
+      "name": "test_resolved_affine_quadratic_green_compatibility",
+      "passed": true,
+      "elapsed_seconds": 0.2697777000721544
     },
     {
       "name": "test_terminal_closure_and_work_identity",

@@ -825,6 +825,36 @@ $\Pi_T^{\rm ad}=I-G_T(G_T^TM_UG_T)^{-1}G_T^TM_U$, the standard
 $M_U$-orthogonal projector.  For general $\Th$, the algebra in
 \cref{prop:frozen_projection} applies with $D_T=B_T^{\rm ad}$.
 
+For the realized point-value pair, we quantify same-configuration discrete
+Green compatibility by
+\begin{equation}
+ e_{{\rm Gr},{\rm full}}
+ =\frac{\norm[F]{D_T^q-D_T^{\rm ad}}}
+        {\norm[F]{D_T^q}},
+ \qquad
+ D_T^{\rm ad}=-M_Z^{-1}G_T^TM_U,
+ \label{eq:full_space_green_compatibility}
+\end{equation}
+where $\norm[F]{\cdot}$ is the Frobenius norm.  Thus
+$e_{{\rm Gr},{\rm full}}=0$ is equivalent to
+$M_ZD_T^q=-G_T^TM_U$.  This full-matrix compatibility diagnostic is not a
+truncation error for either $D_T^q$ or $G_T$, and it does not measure pressure
+residual or projector closure.  The row-restricted strong GMLS construction
+does not impose a discrete integration-by-parts identity, so a nonzero value is
+compatible with accurate action and divergence on resolved fields.
+
+Compatibility on a resolved physical subspace can differ from the full-space
+quantity.  For velocity and pressure subspaces
+$\mathcal V_r\subset V_h$ and $\mathcal Q_r\subset Q_h$, we therefore also use
+\begin{equation}
+ e_{{\rm Gr},r}
+ =\sup_{\substack{0\ne v\in\mathcal V_r\\0\ne q\in\mathcal Q_r}}
+ \frac{\left|v^TM_UG_Tq+q^TM_ZD_T^qv\right|}
+      {\norm[M_U]{v}\,\norm[M_Q]{q}}.
+ \label{eq:restricted_green_compatibility}
+\end{equation}
+The subspaces used in the affine audit are stated with its results.
+
 \begin{proposition}[One-step projector proximity]
 \label{prop:projector_proximity}
 Suppose $G_\Th=G_T+\dt E_\Th$, the terminal response is invertible, and the
@@ -1512,9 +1542,8 @@ constraints to the same solver tolerance while their pressure-induced kinetic
 changes differ.  Bottom:
 changing the placed action changes both the mass-scaled distance from the
 terminal projector and the principal angle between the placed and terminal
-action ranges.  The third projector panel includes the auxiliary compatible
-endpoint control, which removes the meshless-pair nonorthogonality at
-$\Th=T$.}
+action ranges.  The third projector panel includes the auxiliary mass-adjoint
+control, which imposes an orthogonal endpoint baseline by definition.}
 \label{fig:test1_mechanism}
 \end{figure}
 
@@ -1546,7 +1575,16 @@ mass-scaled projector distance and largest action-space angle are
 \label{eq:test1_projector_geometry_values}
 \end{equation}
 The measured endpoint discretization baseline is
-$\norm[M_U]{\Pi_T}=1.61863$, with relative Green/adjoint defect 0.248.
+$\norm[M_U]{\Pi_T}=1.61863$, with
+$e_{{\rm Gr},{\rm full}}=0.2484$ under the explicit normalization
+\eqref{eq:full_space_green_compatibility}.
+This value measures the full-space mismatch between the independently
+constructed strong pressure-test divergence and the mass adjoint induced by
+$G_T$.  Because it compares two discrete realizations, it quantifies a
+compatibility baseline; separate manufactured tests assess approximation
+accuracy.  The projector identities require
+invertibility of $D_T^qG_T$, not discrete mass adjointness, and remain at the
+direct-solve floor.
 The distance and angle in \eqref{eq:test1_projector_geometry_values} isolate
 the increment produced by configuration placement.  The baseline is fixed as $\Th$ varies,
 whereas the added angle at $\Th=0$ is $0.019995$ radians at $\dt=0.02$, the
@@ -1572,10 +1610,15 @@ strictly larger than one.  The meshless sweep and the compatible control
 therefore identify, respectively, the realized total projector and the pure
 configuration-induced increment.
 
-The endpoint adjoint defect is a full-space measure.  In this affine test, the
-trace-free velocity and quadratic pressure lie in the exactly reproduced
-polynomial subspace, where mapped action errors are below $10^{-15}$.  This
-resolved subspace explains the nearly antisymmetric endpoint work values.
+The full-space mismatch is not active on the polynomial pair excited by this
+affine solution.  Taking $\mathcal V_r$ as the trace-free affine Eulerian
+velocity space and
+$\mathcal Q_r=\operatorname{span}\{1-|X|^2\}$ gives
+$e_{{\rm Gr},r}=2.26\times10^{-16}$ in
+\eqref{eq:restricted_green_compatibility}; the mapped pressure-action error is
+also below $10^{-15}$.  The nearly antisymmetric endpoint work values are
+consistent with this restricted compatibility, rather than with small
+full-space nonorthogonality.
 
 The frozen common target therefore coexists with genuinely different
 correction ranges.  The nonlinear placement sweep likewise exhibits common
@@ -2331,8 +2374,15 @@ responses are full rank.  Their raw relative singular gaps decrease from
 $3.85\times10^{-3}$ to $1.23\times10^{-3}$ and raw condition numbers increase
 from 260 to 814; these unscaled quantities are reproducibility data, not the
 stability norm used in the analysis.  The realized endpoint projector has
-$\norm[M_U]{\Pi_T}=1.61863$ and a measured mass-adjoint defect 0.2484,
-confirming that endpoint orthogonality is unavailable for this pair.
+$\norm[M_U]{\Pi_T}=1.61863$ and
+$e_{{\rm Gr},{\rm full}}=0.2484$ as defined in
+\eqref{eq:full_space_green_compatibility}.  The latter is the relative
+Frobenius mismatch of the full point-value pair, not an error estimate for
+either differential operator.  On the resolved affine/quadratic subspaces,
+the corresponding bilinear quantity
+\eqref{eq:restricted_green_compatibility} is $2.26\times10^{-16}$.
+Thus the endpoint projector is nonorthogonal on the full discrete space while
+the polynomial solution subspace is compatible to roundoff.
 The maximum $D_T$-anchored residual in the anchor sweep is
 $4.18\times10^{-15}$.  Across the 21 frozen placements, the maximum relative
 closure, idempotence, and action-annihilation defects are

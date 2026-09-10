@@ -42,7 +42,9 @@ Measured temporal rate of `|theta*-1/2|`: 1.9987346420063332.
 
 ## Test 1C — frozen projector
 
-Endpoint `||Pi_T||_M` = 1.61863; endpoint Green/adjoint relative defect = 2.484e-01. The endpoint norm is therefore reported as a discretization baseline; only `||Pi_theta-Pi_T||_M` and the action-space angle are attributed to placement.
+Endpoint `||Pi_T||_M` = 1.61863.  The same-configuration Green-compatibility mismatch is 2.484e-01, defined by `||D_T^q-D_T^ad||_F/||D_T^q||_F`, with `D_T^ad=-M_Z^{-1}G_T^T M_U`.  This is a full-space compatibility baseline, not a divergence, gradient, pressure-solve, or projector error.  Only `||Pi_theta-Pi_T||_M` and the action-space angle are attributed to placement.
+
+On the trace-free affine velocity space paired with the quadratic homogeneous-Dirichlet disk pressure, the Riesz-normalized bilinear Green mismatch is `2.258e-16`.
 In the auxiliary mass-adjoint endpoint control, `||Pi_T^ad||_M` = 1, while the largest off-endpoint norm is 1.00019993967. This control is diagnostic only and leaves the production pair unchanged.
 
 ## Test 1D — exact-start placed-action stage consistency
