@@ -1,11 +1,11 @@
 {
-  "pdf": "D:\\github\\CCOP\\results\\test2_affine_long_time\\fig_case2_long_time_comparison.pdf",
+  "pdf": "results\\test2_affine_long_time\\fig_case2_long_time_comparison.pdf",
   "auditable": true,
   "verdict": "PASS",
   "page_count": 1,
-  "visible_text_box_count": 109,
-  "text_trace_count": 109,
-  "stroke_path_count": 199,
+  "visible_text_box_count": 108,
+  "text_trace_count": 108,
+  "stroke_path_count": 191,
   "filled_region_count": 77,
   "image_region_count": 0,
   "summary": {

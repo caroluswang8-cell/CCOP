@@ -11,12 +11,18 @@ configuration-assignment theory. Its final numerical sequence is:
 3. strictly nonaffine differential-vortex verification of geometry,
    full-operator transport, the cross response, and complete evolution.
 
+Case 2 now compares only the matched classical ISPH workflow
+`D_star^q G_star` with the complete CCOP architecture `D_T^q G_1/2` in the
+main text.  The terminal--terminal development control is no longer used to
+repeat the target/action ablation already completed by Case 1.
+
 ## Main-text discipline audit
 
 | Material | Classification | Decision |
 |---|---|---|
 | Terminal-anchor and pressure-work separation | Core discovery | Retained in Case 1 |
 | Same-discretization ISPH long-time comparison | Core consequence | Retained in Case 2 |
+| Terminal--terminal long-time control | Repeated mechanism ablation | Removed from the Case 2 main figure and table; retained only as an optional development archive |
 | Nonaffine `F`, `J`, `G`, `D`, and `DG` convergence | Core generalization | Retained in Case 3 |
 | Recursive/direct full-operator audit | Necessary support | Retained compactly, with extended data in the appendix |
 | Constant-field and translation consistency | Qualification | Retained in the reproducibility appendix |

@@ -18,7 +18,8 @@ article has three linked numerical cases:
 - `code/test2_differential_vortex.py`: prescribed-map, exact-increment, and
   complete nonaffine evolution tests.
 - `code/card_piola_pressure_matrixfree_jax_v12_{sph2,mls2}_three_branch_strict.py`:
-  strict CCOP, star--star, and terminal--terminal long-time drivers.
+  strict matched-ISPH and CCOP long-time drivers, with an optional
+  terminal--terminal development control not used in the Case 2 main comparison.
 - `code/constant_translation_audit.py`: constant-field and frozen-translation
   consistency audit.
 - `code/test_test1_affine_free_boundary.py` and

@@ -2,13 +2,14 @@
 
 ## Case 2
 
-- Core conclusion: terminal--terminal closure alone leaves the long-time pressure-work trajectory close to the star--star workflow, whereas midpoint pressure action restores the affine reference and refines systematically in time.
-- Results-level question: which configuration assignment controls the long-time state, center pressure, and conservative energy exchange when the spatial fields are polynomially reproduced?
+- Core conclusion: the complete terminal-target/midpoint-action CCOP architecture suppresses the long-time state, pressure, and energy errors of the matched classical ISPH workflow and refines systematically in time.
+- Results-level question: what is the long-time consequence of replacing the predictor-configuration ISPH projection by full CCOP under matched particles and spatial operators?
 - Archetype: quantitative comparison grid.
-- Hero evidence: the common terminal-divergence panel is read together with the mechanical-energy and semi-axis panels.
-- Controls: star--star and terminal--terminal use the same spatial discretization and time step; three midpoint time steps expose temporal refinement.
+- Hero evidence: the mechanical-energy and semi-axis panels quantify the long-time consequence; the terminal-divergence panel verifies the distinct accepted constraints.
+- Controls: matched ISPH and CCOP use the same spatial discretization at dt = 2e-3; two additional CCOP step sizes expose temporal refinement.
 - Statistics: deterministic trajectories; no stochastic averaging or uncertainty intervals.
 - Exclusion: only the archived t=0 pressure/divergence placeholders are omitted because they precede the first pressure solve.
+- Main-comparison routing: four of five available Case 2 archives are plotted.  The terminal--terminal development control is retained in the raw archive but omitted from the main figure because the target/action ablation is already established in Case 1.
 
 ### Panel audit
 
@@ -59,5 +60,5 @@
 
 ## Machine-readable summary pointers
 
-- Case 2 records: 1660.
+- Case 2 records: 1358.
 - Case 3 spatial runs: 8.

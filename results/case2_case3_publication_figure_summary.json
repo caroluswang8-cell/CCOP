@@ -16,21 +16,6 @@
         "terminal_divergence_rms_max": 5.361000554337477e-07,
         "terminal_divergence_max_norm_max": 5.361025624859322e-07
       },
-      "terminal-terminal_0.002": {
-        "source_archive": "sph2_terminal_terminal_Rdx50_dt0p002_T30.npz",
-        "branch": "terminal-terminal",
-        "dt": 0.002,
-        "n_particles": 8037,
-        "n_saved_states": 302,
-        "major_axis_relative_rms_error": 0.0023963590998435707,
-        "minor_axis_relative_rms_error": 0.0022698911029123904,
-        "kinetic_error_rms_over_E0": 0.0015654479542346106,
-        "potential_error_rms_over_E0": 0.0016091567168948306,
-        "mechanical_max_abs_relative_error": 0.004311146598847682,
-        "center_pressure_rms_error": 0.00034800300118799935,
-        "terminal_divergence_rms_max": 2.2088966186749715e-14,
-        "terminal_divergence_max_norm_max": 1.7923808054085e-13
-      },
       "ccop-midpoint_0.004": {
         "source_archive": "sph2_ccop_midpoint_Rdx50_dt0p004_T30.npz",
         "branch": "ccop-midpoint",
@@ -80,14 +65,6 @@
     "exclusions": [
       {
         "source_archive": "sph2_star_star_Rdx50_dt0p002_T30.npz",
-        "quantity": "center pressure and terminal divergence",
-        "before": 302,
-        "after_pressure": 301,
-        "after_divergence": 301,
-        "rule": "omit only the t=0 placeholder saved before the first pressure solve"
-      },
-      {
-        "source_archive": "sph2_terminal_terminal_Rdx50_dt0p002_T30.npz",
         "quantity": "center pressure and terminal divergence",
         "before": 302,
         "after_pressure": 301,

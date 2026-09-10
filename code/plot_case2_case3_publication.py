@@ -1,7 +1,10 @@
 """Build publication-grade comparison figures for manuscript Cases 2 and 3.
 
-Case 2 reads the strict three-branch affine-drop archives and compares every
-saved state with the same high-accuracy affine ODE reference.  Case 3 reads the
+Case 2 compares the matched star--star ISPH workflow with the complete CCOP
+midpoint architecture against the same high-accuracy affine ODE reference.
+The optional terminal--terminal development control is not part of the main
+Case 2 figure because Case 1 already isolates the target and action axes.
+Case 3 reads the
 validated differential-vortex result archive and visualizes the principal
 spatial runs.  The script writes compact source-data tables, scalar summaries,
 and PDF/SVG/PNG/TIFF figure bundles.
@@ -25,7 +28,6 @@ from scipy.integrate import solve_ivp
 
 CASE2_FILES = (
     "sph2_star_star_Rdx50_dt0p002_T30.npz",
-    "sph2_terminal_terminal_Rdx50_dt0p002_T30.npz",
     "sph2_ccop_midpoint_Rdx50_dt0p004_T30.npz",
     "sph2_ccop_midpoint_Rdx50_dt0p002_T30.npz",
     "sph2_ccop_midpoint_Rdx50_dt0p001_T30.npz",
@@ -34,7 +36,6 @@ CASE2_FILES = (
 COLORS = {
     "exact": "#202020",
     "star": "#7A7A7A",
-    "terminal": "#D55E00",
     "mid_004": "#9ECAE1",
     "mid_002": "#3182BD",
     "mid_001": "#08519C",
@@ -57,20 +58,16 @@ class CaseStyle:
 
 CASE2_STYLES = {
     "star-star_0.002": CaseStyle(
-        "star-star_0.002", "Star–star, dt = 2e-3", COLORS["star"], (0, (2, 2)), 1.05, 2
-    ),
-    "terminal-terminal_0.002": CaseStyle(
-        "terminal-terminal_0.002", "Terminal–terminal, dt = 2e-3", COLORS["terminal"],
-        (0, (5, 2, 1, 2)), 1.15, 3
+        "star-star_0.002", "Matched ISPH, dt = 2e-3", COLORS["star"], (0, (2, 2)), 1.05, 2
     ),
     "ccop-midpoint_0.004": CaseStyle(
-        "ccop-midpoint_0.004", "Midpoint, dt = 4e-3", COLORS["mid_004"], "-", 0.95, 1
+        "ccop-midpoint_0.004", "CCOP midpoint, dt = 4e-3", COLORS["mid_004"], "-", 0.95, 1
     ),
     "ccop-midpoint_0.002": CaseStyle(
-        "ccop-midpoint_0.002", "Midpoint, dt = 2e-3", COLORS["mid_002"], "-", 1.05, 4
+        "ccop-midpoint_0.002", "CCOP midpoint, dt = 2e-3", COLORS["mid_002"], "-", 1.05, 4
     ),
     "ccop-midpoint_0.001": CaseStyle(
-        "ccop-midpoint_0.001", "Midpoint, dt = 1e-3", COLORS["mid_001"], "-", 1.25, 5
+        "ccop-midpoint_0.001", "CCOP midpoint, dt = 1e-3", COLORS["mid_001"], "-", 1.25, 5
     ),
 }
 
@@ -619,13 +616,14 @@ def write_qa_notes(case2_summary: dict[str, Any], case3_summary: dict[str, Any],
 
 ## Case 2
 
-- Core conclusion: terminal--terminal closure alone leaves the long-time pressure-work trajectory close to the star--star workflow, whereas midpoint pressure action restores the affine reference and refines systematically in time.
-- Results-level question: which configuration assignment controls the long-time state, center pressure, and conservative energy exchange when the spatial fields are polynomially reproduced?
+- Core conclusion: the complete terminal-target/midpoint-action CCOP architecture suppresses the long-time state, pressure, and energy errors of the matched classical ISPH workflow and refines systematically in time.
+- Results-level question: what is the long-time consequence of replacing the predictor-configuration ISPH projection by full CCOP under matched particles and spatial operators?
 - Archetype: quantitative comparison grid.
-- Hero evidence: the common terminal-divergence panel is read together with the mechanical-energy and semi-axis panels.
-- Controls: star--star and terminal--terminal use the same spatial discretization and time step; three midpoint time steps expose temporal refinement.
+- Hero evidence: the mechanical-energy and semi-axis panels quantify the long-time consequence; the terminal-divergence panel verifies the distinct accepted constraints.
+- Controls: matched ISPH and CCOP use the same spatial discretization at dt = 2e-3; two additional CCOP step sizes expose temporal refinement.
 - Statistics: deterministic trajectories; no stochastic averaging or uncertainty intervals.
 - Exclusion: only the archived t=0 pressure/divergence placeholders are omitted because they precede the first pressure solve.
+- Main-comparison routing: four of five available Case 2 archives are plotted.  The terminal--terminal development control is retained in the raw archive but omitted from the main figure because the target/action ablation is already established in Case 1.
 
 ### Panel audit
 
@@ -683,15 +681,13 @@ def write_qa_notes(case2_summary: dict[str, Any], case3_summary: dict[str, Any],
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--case2-dir", type=Path, required=True)
-    parser.add_argument("--case3-json", type=Path, required=True)
+    parser.add_argument("--case3-json", type=Path)
     parser.add_argument("--output-root", type=Path, required=True)
     args = parser.parse_args()
 
     configure_matplotlib()
     case2_dir = args.output_root / "test2_affine_long_time"
-    case3_dir = args.output_root / "test2_differential_vortex" / "figures"
     case2_dir.mkdir(parents=True, exist_ok=True)
-    case3_dir.mkdir(parents=True, exist_ok=True)
 
     missing = [name for name in CASE2_FILES if not (args.case2_dir / name).is_file()]
     if missing:
@@ -700,16 +696,24 @@ def main() -> None:
     case2_summary = write_case2_source_data(case2, case2_dir)
     case2_base = plot_case2(case2, case2_dir)
 
-    case3 = load_case3_results(args.case3_json)
-    case3_summary = write_case3_source_data(case3, case3_dir)
-    case3_base = plot_case3(case3, case3_dir)
-
-    summary = {
-        "case2": case2_summary,
-        "case3": case3_summary,
-        "figures": [case2_base.name, case3_base.name],
-    }
     summary_path = args.output_root / "case2_case3_publication_figure_summary.json"
+    if args.case3_json is not None:
+        case3_dir = args.output_root / "test2_differential_vortex" / "figures"
+        case3_dir.mkdir(parents=True, exist_ok=True)
+        case3 = load_case3_results(args.case3_json)
+        case3_summary = write_case3_source_data(case3, case3_dir)
+        case3_base = plot_case3(case3, case3_dir)
+        figures = [case2_base.name, case3_base.name]
+    else:
+        if not summary_path.is_file():
+            raise FileNotFoundError(
+                "Existing combined summary is required when --case3-json is omitted."
+            )
+        previous = json.loads(summary_path.read_text(encoding="utf-8"))
+        case3_summary = previous["case3"]
+        figures = [case2_base.name, *[name for name in previous["figures"] if name != case2_base.name]]
+
+    summary = {"case2": case2_summary, "case3": case3_summary, "figures": figures}
     summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     write_qa_notes(case2_summary, case3_summary, args.output_root / "case2_case3_figure_qa.md")
     print(json.dumps({"summary": str(summary_path), "figures": summary["figures"]}, indent=2))
