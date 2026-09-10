@@ -1,0 +1,225 @@
+{
+  "case2": {
+    "cases": {
+      "star-star_0.002": {
+        "source_archive": "sph2_star_star_Rdx50_dt0p002_T30.npz",
+        "branch": "star-star",
+        "dt": 0.002,
+        "n_particles": 8037,
+        "n_saved_states": 302,
+        "major_axis_relative_rms_error": 0.002398848235286615,
+        "minor_axis_relative_rms_error": 0.0022731855482999107,
+        "kinetic_error_rms_over_E0": 0.0015660660265538874,
+        "potential_error_rms_over_E0": 0.001609863212432152,
+        "mechanical_max_abs_relative_error": 0.004311176007019579,
+        "center_pressure_rms_error": 0.0003483517369277084,
+        "terminal_divergence_rms_max": 5.361000554337477e-07,
+        "terminal_divergence_max_norm_max": 5.361025624859322e-07
+      },
+      "terminal-terminal_0.002": {
+        "source_archive": "sph2_terminal_terminal_Rdx50_dt0p002_T30.npz",
+        "branch": "terminal-terminal",
+        "dt": 0.002,
+        "n_particles": 8037,
+        "n_saved_states": 302,
+        "major_axis_relative_rms_error": 0.0023963590998435707,
+        "minor_axis_relative_rms_error": 0.0022698911029123904,
+        "kinetic_error_rms_over_E0": 0.0015654479542346106,
+        "potential_error_rms_over_E0": 0.0016091567168948306,
+        "mechanical_max_abs_relative_error": 0.004311146598847682,
+        "center_pressure_rms_error": 0.00034800300118799935,
+        "terminal_divergence_rms_max": 2.2088966186749715e-14,
+        "terminal_divergence_max_norm_max": 1.7923808054085e-13
+      },
+      "ccop-midpoint_0.004": {
+        "source_archive": "sph2_ccop_midpoint_Rdx50_dt0p004_T30.npz",
+        "branch": "ccop-midpoint",
+        "dt": 0.004,
+        "n_particles": 8037,
+        "n_saved_states": 152,
+        "major_axis_relative_rms_error": 1.6533834853329435e-05,
+        "minor_axis_relative_rms_error": 1.8317178583712523e-05,
+        "kinetic_error_rms_over_E0": 7.348377700146647e-06,
+        "potential_error_rms_over_E0": 7.351753561626437e-06,
+        "mechanical_max_abs_relative_error": 5.782268230891674e-07,
+        "center_pressure_rms_error": 3.0126841706168385e-06,
+        "terminal_divergence_rms_max": 4.874675069634721e-13,
+        "terminal_divergence_max_norm_max": 5.780329285966918e-13
+      },
+      "ccop-midpoint_0.002": {
+        "source_archive": "sph2_ccop_midpoint_Rdx50_dt0p002_T30.npz",
+        "branch": "ccop-midpoint",
+        "dt": 0.002,
+        "n_particles": 8037,
+        "n_saved_states": 302,
+        "major_axis_relative_rms_error": 4.128616175038587e-06,
+        "minor_axis_relative_rms_error": 4.573359059448729e-06,
+        "kinetic_error_rms_over_E0": 1.844265867358254e-06,
+        "potential_error_rms_over_E0": 1.8451180798085698e-06,
+        "mechanical_max_abs_relative_error": 1.447874725668541e-07,
+        "center_pressure_rms_error": 7.470402524410641e-07,
+        "terminal_divergence_rms_max": 1.7832577812194443e-14,
+        "terminal_divergence_max_norm_max": 1.7576044786249412e-13
+      },
+      "ccop-midpoint_0.001": {
+        "source_archive": "sph2_ccop_midpoint_Rdx50_dt0p001_T30.npz",
+        "branch": "ccop-midpoint",
+        "dt": 0.001,
+        "n_particles": 8037,
+        "n_saved_states": 602,
+        "major_axis_relative_rms_error": 1.0334566769516831e-06,
+        "minor_axis_relative_rms_error": 1.1448168092507026e-06,
+        "kinetic_error_rms_over_E0": 4.6282495122549894e-07,
+        "potential_error_rms_over_E0": 4.6303841632657537e-07,
+        "mechanical_max_abs_relative_error": 3.6761825694675565e-08,
+        "center_pressure_rms_error": 1.8110632897277394e-07,
+        "terminal_divergence_rms_max": 1.3127300932738013e-14,
+        "terminal_divergence_max_norm_max": 1.8371464077324303e-13
+      }
+    },
+    "exclusions": [
+      {
+        "source_archive": "sph2_star_star_Rdx50_dt0p002_T30.npz",
+        "quantity": "center pressure and terminal divergence",
+        "before": 302,
+        "after_pressure": 301,
+        "after_divergence": 301,
+        "rule": "omit only the t=0 placeholder saved before the first pressure solve"
+      },
+      {
+        "source_archive": "sph2_terminal_terminal_Rdx50_dt0p002_T30.npz",
+        "quantity": "center pressure and terminal divergence",
+        "before": 302,
+        "after_pressure": 301,
+        "after_divergence": 301,
+        "rule": "omit only the t=0 placeholder saved before the first pressure solve"
+      },
+      {
+        "source_archive": "sph2_ccop_midpoint_Rdx50_dt0p004_T30.npz",
+        "quantity": "center pressure and terminal divergence",
+        "before": 152,
+        "after_pressure": 151,
+        "after_divergence": 151,
+        "rule": "omit only the t=0 placeholder saved before the first pressure solve"
+      },
+      {
+        "source_archive": "sph2_ccop_midpoint_Rdx50_dt0p002_T30.npz",
+        "quantity": "center pressure and terminal divergence",
+        "before": 302,
+        "after_pressure": 301,
+        "after_divergence": 301,
+        "rule": "omit only the t=0 placeholder saved before the first pressure solve"
+      },
+      {
+        "source_archive": "sph2_ccop_midpoint_Rdx50_dt0p001_T30.npz",
+        "quantity": "center pressure and terminal divergence",
+        "before": 602,
+        "after_pressure": 601,
+        "after_divergence": 601,
+        "rule": "omit only the t=0 placeholder saved before the first pressure solve"
+      }
+    ]
+  },
+  "case3": {
+    "source_archive": "test2_differential_vortex_results.json",
+    "spatial_dt": 0.0009765625,
+    "spatial_cases": [
+      {
+        "layers": 12,
+        "particles": 499,
+        "pressure_dofs": 423,
+        "dt": 0.0009765625,
+        "theta": 0.5,
+        "steps": 1024,
+        "final_time": 1.0,
+        "predictor": "implicit midpoint conservative body-force predictor",
+        "action_path": "linear position interpolation"
+      },
+      {
+        "layers": 12,
+        "particles": 499,
+        "pressure_dofs": 423,
+        "dt": 0.0009765625,
+        "theta": 1.0,
+        "steps": 1024,
+        "final_time": 1.0,
+        "predictor": "implicit midpoint conservative body-force predictor",
+        "action_path": "linear position interpolation"
+      },
+      {
+        "layers": 18,
+        "particles": 1087,
+        "pressure_dofs": 973,
+        "dt": 0.0009765625,
+        "theta": 0.5,
+        "steps": 1024,
+        "final_time": 1.0,
+        "predictor": "implicit midpoint conservative body-force predictor",
+        "action_path": "linear position interpolation"
+      },
+      {
+        "layers": 18,
+        "particles": 1087,
+        "pressure_dofs": 973,
+        "dt": 0.0009765625,
+        "theta": 1.0,
+        "steps": 1024,
+        "final_time": 1.0,
+        "predictor": "implicit midpoint conservative body-force predictor",
+        "action_path": "linear position interpolation"
+      },
+      {
+        "layers": 24,
+        "particles": 1901,
+        "pressure_dofs": 1749,
+        "dt": 0.0009765625,
+        "theta": 0.5,
+        "steps": 1024,
+        "final_time": 1.0,
+        "predictor": "implicit midpoint conservative body-force predictor",
+        "action_path": "linear position interpolation"
+      },
+      {
+        "layers": 24,
+        "particles": 1901,
+        "pressure_dofs": 1749,
+        "dt": 0.0009765625,
+        "theta": 1.0,
+        "steps": 1024,
+        "final_time": 1.0,
+        "predictor": "implicit midpoint conservative body-force predictor",
+        "action_path": "linear position interpolation"
+      },
+      {
+        "layers": 30,
+        "particles": 2939,
+        "pressure_dofs": 2751,
+        "dt": 0.0009765625,
+        "theta": 0.5,
+        "steps": 1024,
+        "final_time": 1.0,
+        "predictor": "implicit midpoint conservative body-force predictor",
+        "action_path": "linear position interpolation"
+      },
+      {
+        "layers": 30,
+        "particles": 2939,
+        "pressure_dofs": 2751,
+        "dt": 0.0009765625,
+        "theta": 1.0,
+        "steps": 1024,
+        "final_time": 1.0,
+        "predictor": "implicit midpoint conservative body-force predictor",
+        "action_path": "linear position interpolation"
+      }
+    ],
+    "energy_note": "The archive stores absolute relative invariant errors rather than signed energy values; the figure reports those archived definitions without reconstructing a sign.",
+    "axis_note": "The exact differential-vortex map preserves the circular boundary, so a major/minor-axis panel is non-discriminating; radial phase is the corresponding deformation diagnostic.",
+    "center_pressure_note": "The archive stores the global pressure error rather than a center-pressure time series; pressure is therefore reported through the available global norm.",
+    "exclusions": []
+  },
+  "figures": [
+    "fig_case2_long_time_comparison",
+    "fig_case3_nonaffine_state_energy_divergence"
+  ]
+}

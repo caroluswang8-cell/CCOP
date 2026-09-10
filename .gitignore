@@ -9,4 +9,5 @@ __pycache__/
 *.synctex.gz
 *.npz
 results/**/test*_results.json
-
+results/**/*.tiff
+results/**/*.collision-audit.pdf

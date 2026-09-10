@@ -1710,9 +1710,9 @@ the semi-axes, centre pressure, phase, and conservative energy exchange through
 $T=30$.  This construction makes the case a long-time test of the pressure
 update rather than of spatial approximation.
 
-\subsection{A same-discretization ISPH workflow comparison}
+\subsection{A same-discretization three-branch comparison}
 
-We compare two pressure workflows at $R/\Delta x=50$ using the same
+We compare three configuration assignments at $R/\Delta x=50$ using the same
 quadratic material-derivative discretization.  The archived \texttt{SPH2}
 driver uses a cubic SPH kernel to weight a quadratic MLS fit; the \texttt{MLS2}
 and \texttt{SPH2} strict drivers share this derivative construction and are not
@@ -1752,7 +1752,19 @@ The fixed star--star system is solved by sparse LU.  Its own-anchor residual
 is accepted independently of $D_T^qu_\star^T$, which is retained as a common
 terminal diagnostic without an extra projection.
 
-CCOP instead couples the terminal target to the midpoint action.  For a
+The terminal--terminal control retains the nonlinear terminal target but places
+the pressure action on that same endpoint.  It solves
+\begin{equation}
+ D_T^q[x_T]\bigl(u^\star-\Delta t\,G_T^{\rm phys}[x_T]p_T\bigr)=0,
+ \qquad
+ x_T=x^\star-\frac{\Delta t^2}{2}G_T^{\rm phys}[x_T]p_T.
+ \label{eq:case2_terminal_terminal_control}
+\end{equation}
+It therefore separates the consequence of terminal represented closure from
+the consequence of pressure-action placement without changing the pressure
+space or terminal geometry solve.
+
+CCOP couples the same terminal target to the midpoint action.  For a
 trial pressure $p$, the corrected state is
 \begin{equation}
  u_T(p)=u^\star-\Delta t\,G_{1/2}^{\rm phys}[x_T(p)]p,
@@ -1787,25 +1799,32 @@ details are recorded in \cref{sec:case2_implementation_contract}.
 
 \begin{figure}[t]
 \centering
-\safegraphic[0.96\linewidth]{fig_case2_long_time_axes_pressure_energy.pdf}
-\caption{\textbf{Long-time affine accuracy of midpoint pressure action.}
-(a) Major and minor semi-axes against the affine reference.
-(b) Accumulated timing error of successive positive deformation maxima.
-(c) Relative total-energy error for $\Delta t=2\times10^{-3}$ and
-$10^{-3}$.  (d) Kinetic, potential, and total conservative energy exchange.
-(e) Centre-pressure error evaluated at the midpoint action time.
-(f) Error reduction when the time step is halved; the dashed line marks the
-factor four expected from second-order behavior.}
+\safegraphic[0.98\linewidth]{\figroot/test2_affine_long_time/fig_case2_long_time_comparison.pdf}
+\caption{\textbf{Long-time separation of terminal closure and pressure-action placement.}
+(a) Major (solid) and minor (dashed) semi-axes against the DOP853 affine
+reference.  (b) Centre-pressure error evaluated at the action time owned by
+each branch.  (c,d) Kinetic- and potential-energy errors, normalized by the
+initial exact mechanical energy.  (e) Relative mechanical-energy drift.
+(f) Common terminal-divergence diagnostic.  Star--star, terminal--terminal,
+and midpoint use the same particles, pressure space, material derivatives,
+force predictor, and position update.  The three midpoint curves use
+$\Delta t=4\times10^{-3},2\times10^{-3},10^{-3}$; both controls use
+$\Delta t=2\times10^{-3}$.}
 \label{fig:case2_affine_transfer}
 \end{figure}
 
-Figure~\ref{fig:case2_affine_transfer} shows that the midpoint branch follows
-the analytic semi-axes and centre pressure over eight oscillations.  Halving
-the time step reduces the major-axis, minor-axis, signed-shape, energy, centre-
-pressure, and accumulated phase errors by factors close to four.  Kinetic and
-conservative potential energy exchange periodically, while the total-energy
-error remains bounded within each cycle and returns to the $10^{-10}$ scale at
-$T=30$.
+Figure~\ref{fig:case2_affine_transfer} separates two effects that are hidden in
+a two-branch comparison.  Terminal--terminal reduces the common terminal
+diagnostic from $5.36\times10^{-7}$ for star--star to
+$2.21\times10^{-14}$, yet its semi-axis, centre-pressure, and energy histories
+remain nearly coincident with star--star.  Terminal represented closure alone
+therefore does not select the finite-step pressure-work trajectory.  Moving the
+action to the midpoint changes that trajectory: at the same time step, the
+maximum mechanical-energy error decreases from $4.31\times10^{-3}$ to
+$1.45\times10^{-7}$.  Across the three midpoint step sizes, the observed
+least-squares rates are $2.000$ for both semi-axes, $1.994$ for the kinetic and
+potential components, $1.988$ for the maximum mechanical-energy error, and
+$2.028$ for the centre pressure.
 
 \begin{table}[t]
 \centering
@@ -1817,7 +1836,8 @@ are relative RMS errors of the major and minor semi-axes,
 $E_{\rm err}=\max_t|E/E_0-1|$, and $e_{p_c}$ is the relative RMS centre-pressure
 error at the action time, obtained by the stored local quadratic centre fit.
 ISPH denotes the same-discretization star--star workflow of
-\eqref{eq:case2_same_discretization_isph}.}
+\eqref{eq:case2_same_discretization_isph}; terminal--terminal denotes the
+endpoint-action control in \eqref{eq:case2_terminal_terminal_control}.}
 \label{tab:case2_transfer_numbers}
 \scriptsize
 \setlength{\tabcolsep}{3.5pt}
@@ -1828,27 +1848,23 @@ Branch & $\Delta t$ & $R_{\rm own}$ & $R_T$ & $e_a$ & $e_b$ &
 $E_{\rm err}$ & $e_{p_c}$ \\
 \midrule
 ISPH (star--star) & $2{\times}10^{-3}$ & $1.81{\times}10^{-15}$ & $5.36{\times}10^{-7}$ & $2.40{\times}10^{-3}$ & $2.27{\times}10^{-3}$ & $4.31{\times}10^{-3}$ & $1.93{\times}10^{-3}$ \\
+Terminal--terminal & $2{\times}10^{-3}$ & $2.21{\times}10^{-14}$ & $2.21{\times}10^{-14}$ & $2.40{\times}10^{-3}$ & $2.27{\times}10^{-3}$ & $4.31{\times}10^{-3}$ & $1.93{\times}10^{-3}$ \\
+CCOP midpoint & $4{\times}10^{-3}$ & $4.87{\times}10^{-13}$ & $4.87{\times}10^{-13}$ & $1.65{\times}10^{-5}$ & $1.83{\times}10^{-5}$ & $5.78{\times}10^{-7}$ & $1.67{\times}10^{-5}$ \\
 CCOP midpoint & $2{\times}10^{-3}$ & $1.78{\times}10^{-14}$ & $1.78{\times}10^{-14}$ & $4.13{\times}10^{-6}$ & $4.57{\times}10^{-6}$ & $1.45{\times}10^{-7}$ & $4.13{\times}10^{-6}$ \\
 CCOP midpoint & $1{\times}10^{-3}$ & $1.31{\times}10^{-14}$ & $1.31{\times}10^{-14}$ & $1.03{\times}10^{-6}$ & $1.14{\times}10^{-6}$ & $3.68{\times}10^{-8}$ & $1.00{\times}10^{-6}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:case2_transfer_numbers} compares the two workflows on the same
-spatial discretization.  The ISPH (star--star) branch solves its own anchor to the
-algebraic floor but retains a terminal residual of $5.36\times10^{-7}$ and a
-$4.31\times10^{-3}$ energy drift.  At the same step size, midpoint CCOP closes
-the terminal target to $1.78\times10^{-14}$ and reduces the maximum energy
-error to $1.45\times10^{-7}$.  The full-period error decreases from
-$2.52\times10^{-4}$ for star--star to $1.38\times10^{-6}$ for midpoint CCOP.
-For midpoint CCOP, halving the time step gives observed two-level orders
-$1.998$ for both semi-axes, $2.015$ for the RMS energy error, $2.044$ for the
-centre pressure, and $2.014$ for the accumulated phase error.  The affine
-reference therefore gives a long-time state, pressure, phase, and energy
-comparison in a polynomially reproduced setting.  This pair changes both the
-anchor and the action placement; their individual effects are separated in
-Case~1, not inferred separately from this long-time pair.  Equal pressure
-dimension does not imply equal cost for the frozen LU and nonlinear solves.
+Table~\ref{tab:case2_transfer_numbers} gives the corresponding scalar
+diagnostics.  The star--star/terminal--terminal comparison changes the terminal
+target while leaving endpoint pressure action, long-time state error, and
+energy drift essentially unchanged.  The terminal--terminal/midpoint comparison
+then retains terminal closure while changing the action placement.  Together
+these controls carry the one-step separation in Case~1 into a long-time
+calculation without attributing the improvement to a different particle cloud,
+pressure space, or derivative formula.  Equal pressure dimension does not imply
+equal cost for the frozen LU and nonlinear solves.
 
 \subsection{Relation to other particle formulations}
 
@@ -2083,12 +2099,31 @@ $1$   & 2.067 & 2.074 & 2.062 & 1.936 & 2.124 & 2.142 & 2.034 \\
 \end{tabular}
 \end{table}
 
+\begin{figure}[t]
+\centering
+\safegraphic[0.98\linewidth]{\figroot/test2_differential_vortex/figures/fig_case3_nonaffine_state_energy_divergence.pdf}
+\caption{\textbf{State, energy, and closure under nonaffine material shear.}
+(a) Radial angular displacement at $T=1$ for the finest cloud.  (b) Final
+spatial errors at $\Delta t=1/1024$; circles, squares, triangles, and diamonds
+denote position, velocity, pressure, and independent-divergence errors,
+respectively.  Solid blue and dashed orange curves denote midpoint and terminal
+placement.  (c--e) Relative kinetic-, conservative-potential-, and
+mechanical-energy invariant errors on the $R/h=30$ cloud.  (f) Represented
+terminal closure (solid) and the independent strong-divergence diagnostic
+(dotted) on the same cloud.}
+\label{fig:case3_state_energy_divergence}
+\end{figure}
+
 Both placements achieve approximately second-order state accuracy under
 strictly nonaffine material shear.  Together with the prescribed-map and
 exact-increment results, this establishes that the target/action separation,
 cross response, and committed operators survive spatially varying material
-deformation.  The regional decomposition also singles out boundary pressure
-action as the next component to validate on a moving free surface.
+deformation.  Figure~\ref{fig:case3_state_energy_divergence} shows the same
+conclusion dynamically: the radial phase follows the analytic differential
+rotation, the physical state and independent divergence decrease under spatial
+refinement, and represented terminal closure remains at the algebraic floor.
+Because this exact map preserves the circular boundary, major and minor axes
+are identically non-discriminating; radial phase is the deformation observable.
 
 The nonaffine case also supplies a fixed-cloud temporal-order check.  At
 $R/h=24$, the exact-error curves for midpoint placement are nearly unchanged
