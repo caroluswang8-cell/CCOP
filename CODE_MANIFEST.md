@@ -12,3 +12,5 @@ implicit-midpoint predictor shared by the nonaffine driver.  It is separated
 from unrelated legacy experiments so the published dependency graph remains
 self-contained.
 
+`code/check_tex_static.py` is the manuscript integrity gate used by the GitHub
+workflow to verify labels, citations, environments, and figure paths.
