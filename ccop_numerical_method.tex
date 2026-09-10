@@ -62,7 +62,7 @@
 \maketitle
 
 \begin{abstract}
-Standard semi-implicit Lagrangian projection methods evaluate the incompressibility constraint and pressure action on a single geometric stage. We show that this common-stage construction hides a more fundamental configuration-assignment problem: the accepted velocity constraint belongs to the terminal configuration, whereas pressure work depends on the configuration on which the pressure impulse is represented. We therefore identify configuration consistency as a structural design principle for Lagrangian projection, separating the geometry that determines represented terminal incompressibility from that governing pressure work. We formulate this principle as configuration-consistent oblique projection (CCOP). The constraint is anchored to the terminal configuration, while the pressure action is placed independently along the material path. The cross response \(D_TG_\Theta\) retains a single scalar pressure equation and induces a configuration-dependent oblique projector. We establish its projection structure and relative-deformation solvability. For the actual force-free CCOP step on a fixed spatial discretization, a local expansion shows that midpoint action placement cancels the leading configuration-induced velocity defect without an additional pressure stage. Affine tests isolate terminal-constraint and pressure-work errors and show that identical represented closure can coexist with different correction ranges and kinetic work. A same-discretization ISPH comparison demonstrates their long-time consequences. A strictly nonaffine differential vortex then verifies the transported operators, cross response, and complete evolution under spatially varying material shear. These results establish CCOP as a configuration-consistent projection architecture that exposes and controls the finite-step relation between terminal closure and pressure work while retaining a single scalar pressure solve.
+Standard semi-implicit Lagrangian projection methods evaluate the incompressibility constraint and pressure action on a single geometric stage. We show that this common-stage construction hides a more fundamental configuration-assignment problem: the accepted velocity constraint belongs to the terminal configuration, whereas pressure work depends on the configuration on which the pressure impulse is represented. We therefore identify configuration consistency as a structural design principle for Lagrangian projection, separating the geometry that determines represented terminal incompressibility from that governing pressure work. We formulate this principle as configuration-consistent oblique projection (CCOP). The constraint is anchored to the terminal configuration, while the pressure action is placed independently along the material path. The cross response \(D_TG_\Theta\) retains a single scalar pressure equation and induces a configuration-dependent oblique projector. We establish its projection structure and relative-deformation solvability. On a fixed spatial discretization, a rescaled local-branch analysis shows that midpoint action placement cancels the leading configuration-induced velocity defect for the force-free step and the second-order conservative-force predictor used here. Affine tests isolate terminal-constraint and pressure-work errors and show that identical represented closure can coexist with different correction ranges and kinetic work. A same-discretization ISPH comparison demonstrates their long-time consequences. A strictly nonaffine differential vortex then verifies the transported operators, cross response, and complete evolution under spatially varying material shear. These results establish CCOP as a configuration-consistent projection architecture that exposes and controls the finite-step relation between terminal closure and pressure work while retaining a single scalar pressure solve.
 \end{abstract}
 
 \noindent\textbf{Keywords.}
@@ -131,7 +131,7 @@ The contribution is the configuration assignment and its computable
 consequences, rather than a new algebraic identity for projectors.  The analysis
 links relative deformation to cross-response solvability, correction-range
 variation to projector obliqueness, and a stage defect to pressure-impulse
-accuracy.  A fixed-space expansion of the actual force-free CCOP equations
+accuracy.  A fixed-space local-branch expansion of the actual CCOP equations
 identifies the surviving projected variation of the pressure-action direction
 as the leading local velocity defect.  The
 discretization realizes these relations with a square
@@ -413,8 +413,8 @@ path are themselves consistent.
 
 \begin{proposition}[Defect of the placed pressure impulse]
 \label{prop:placed_impulse_order}
-Let $g(t)=\G(t)p(t)$ be twice continuously differentiable on one force-free
-pressure substep, and define the action-stage error in the momentum norm by
+Let $g(t)=\G(t)p(t)$ be twice continuously differentiable on one smooth
+semidiscrete step, and define the action-stage error in the momentum norm by
 \begin{equation}
   \eta_\Th^h=g_\Th^h-g(t_n+\Th\dt).
 \label{eq:second_order_stage_consistency}
@@ -429,11 +429,9 @@ Then
 Consequently, if $\eta_{1/2}^h=O(\dt^2)$, midpoint placement has a
 third-order local pressure-impulse defect.  For any fixed
 $\Th\ne1/2$, the quadrature term is generically $O(\dt^2)$; an
-$O(\dt)$ endpoint stage error has the same local order.  If the remaining
-stages are stable and have matching local consistency, standard one-step
-accumulation gives global orders two and one for the corresponding pressure
-paths.  This last implication is conditional; it is not a global convergence
-theorem for an arbitrary force, viscous, or boundary predictor.
+$O(\dt)$ endpoint stage error has the same local order.  These are local
+statements.  Global temporal rates of the complete nonlinear scheme are
+assessed separately in the numerical experiments.
 \end{proposition}
 
 \begin{proof}
@@ -448,34 +446,146 @@ and
  =\dt g(t_n)+\Th\dt^2\dot g(t_n)+O(\dt^3).
 \]
 Subtracting $\dt\eta_\Th^h$ proves
-\eqref{eq:placed_impulse_defect}.  The stated orders follow by cancellation
-at $\Th=1/2$ and standard stable accumulation of the local defects.
+\eqref{eq:placed_impulse_defect}.  The stated local orders follow by
+cancellation at $\Th=1/2$.
 \end{proof}
 
 The preceding statement isolates quadrature from stage construction.  The
-next result closes that distinction for the actual CCOP equations on a fixed
-spatial discretization.
+actual CCOP residual is degenerate at zero step size: if $D_nu_n=0$, then
+$\mathcal R(p,0)=0$ for every pressure coefficient.  The following rescaling
+first establishes the numerical pressure branch needed for a local expansion.
+Indeed, because $D_px_T=O_h(\tau^2)$,
+\begin{equation}
+ D_p\mathcal R(p,\tau)=-\tau D_nG_n+O_h(\tau^2),
+ \label{eq:degenerate_pressure_jacobian}
+\end{equation}
+so the unscaled residual does not satisfy the hypotheses of the ordinary
+implicit-function theorem at $\tau=0$.
 
-\begin{proposition}[Local defect of the force-free CCOP step]
-\label{prop:actual_ccop_local_defect}
-Fix finite-dimensional velocity, pressure, and constraint spaces and consider
+\begin{lemma}[Rescaled local CCOP branch]
+\label{lem:regularized_local_ccop_branch}
+Fix a finite-dimensional velocity space $V_h$, a pressure space $Q_{h,0}$
+after imposing the applicable gauge or homogeneous boundary condition, and an
+equal-dimensional constraint space $Z_h$ (realized below as the corresponding
+pressure-test dual), together with fixed pressure labels.  Consider
 the smooth semidiscrete constrained system
 \begin{equation}
- \dot x=u,\qquad \dot u=-G(x)p,\qquad D(x)u=0.
+ \dot x=u,\qquad \dot u=f(x)-G(x)p,\qquad D(x)u=0.
  \label{eq:semidiscrete_constrained_flow}
 \end{equation}
-Suppose $D,G$, and the pressure branch are twice continuously differentiable
-near an exact state $(x_n,u_n,p_n)$, and suppose
-$L_n=D_nG_n$ is bijective on the chosen pressure quotient with
-$\norm{L_n^{-1}}\le C_L$.  Starting from that exact state, apply
-\eqref{eq:nonlinear_velocity}--\eqref{eq:nonlinear_terminal_constraint} with
-$u^\star=u_n$, $x^\star=x_n+\dt u_n$, $\gamma=1/2$, and
-$x_\Th=x_n+\Th(x_T-x_n)$.  Then, in any fixed equivalent finite-dimensional
-norm,
+Assume $f\in C^2$, $D\in C^3$, $G\in C^2$, $D_nu_n=0$, and
+$L_n=D_nG_n:Q_{h,0}\to Z_h$ is bijective.  Let
+$u^\star(\tau)$ be $C^3$, let $a^\star(\tau)$ be $C^2$, and write
 \begin{equation}
- u_{T,\Th}^h-u_h(t_n+\dt)
- =\left(\frac12-\Th\right)\dt^2
-   \Pi_n G_n'[u_n]p_n+O_h(\dt^3),
+ u^\star(0)=u_n,
+ \qquad
+ x^\star(\tau)=x_n+\tau u_n+\tau^2a^\star(\tau).
+ \label{eq:general_predictor_scaling}
+\end{equation}
+For fixed $\Th\in[0,1]$, set
+\begin{equation}
+ x_T=x_n+\tau u_n+\tau^2\xi,
+ \qquad
+ x_\Th=x_n+\Th(x_T-x_n).
+ \label{eq:regularized_terminal_scaling}
+\end{equation}
+Then the CCOP equations have a unique local $C^2$ branch
+$(\xi_\Th(\tau),p_\Th(\tau))$ near $\tau=0$.  Its value at zero is
+\begin{align}
+ p_0&=L_n^{-1}\left(D_n'[u_n]u_n+D_n\dot u^\star(0)\right),
+ \label{eq:regularized_pressure_limit}\\
+ \xi_0&=a^\star(0)-\gamma G_np_0.
+ \label{eq:regularized_position_limit}
+\end{align}
+If $\dot u^\star(0)=f_n$, then $p_0=p_n$.  If, in addition,
+$a^\star(0)=f_n/2$ and $\gamma=1/2$, then
+$\xi_0=\dot u_n/2$.
+\end{lemma}
+
+\begin{proof}
+For $\tau\ne0$, the position and terminal-constraint equations are equivalent
+to
+\begin{align}
+ \Phi_1(\xi,p;\tau)
+ &=\xi-a^\star(\tau)+\gamma G(x_\Th)p=0,
+ \label{eq:regularized_ccop_position}\\
+ \Phi_2(\xi,p;\tau)
+ &=\tau^{-1}D(x_T)u^\star(\tau)-D(x_T)G(x_\Th)p=0.
+ \label{eq:regularized_ccop_constraint}
+\end{align}
+For fixed $\xi$, set
+$r(\tau,\xi)=D(x_n+\tau u_n+\tau^2\xi)u^\star(\tau)$.
+Since $r(0,\xi)=D_nu_n=0$, Hadamard's lemma gives the $C^2$ extension
+\begin{equation}
+ \frac{r(\tau,\xi)}{\tau}
+ =\int_0^1\partial_\tau r(s\tau,\xi)\,ds,
+ \qquad
+ \left.\frac{r(\tau,\xi)}{\tau}\right|_{\tau=0}
+ =D_n'[u_n]u_n+D_n\dot u^\star(0).
+ \label{eq:hadamard_constraint_extension}
+\end{equation}
+Hence \eqref{eq:regularized_ccop_position}--
+\eqref{eq:regularized_ccop_constraint} extend to a $C^2$ map at zero.  At the
+root defined by \eqref{eq:regularized_pressure_limit}--
+\eqref{eq:regularized_position_limit}, its Jacobian is
+\begin{equation}
+ D_{(\xi,p)}\Phi(\xi_0,p_0;0)
+ =\begin{bmatrix}
+ I & \gamma G_n\\
+ 0 & -D_nG_n
+ \end{bmatrix}.
+ \label{eq:regularized_ccop_jacobian}
+\end{equation}
+This matrix is invertible precisely when $L_n$ is bijective on the stated
+spaces, so the implicit-function theorem supplies the local branch.  Finally,
+differentiating $D(x)u=0$ along
+\eqref{eq:semidiscrete_constrained_flow} gives
+\begin{equation*}
+ D_nG_np_n=D_n'[u_n]u_n+D_nf_n.
+\end{equation*}
+The last two conclusions follow from uniqueness and
+\eqref{eq:regularized_position_limit}.
+\end{proof}
+
+Here and below, primes denote Fr\'echet derivatives with respect to the
+configuration.  The limiting pressure is independent of $\Th$ because every action
+configuration reduces to $x_n$ at $\tau=0$; placement enters the next
+coefficient of the branch.  For the implemented fixed-stencil, fixed-label
+operators, the determinant, inverse, and cofactor formulas are analytic on the
+open set $j_Tj_\Th\ne0$.  The raw-determinant acceptance test verifies that the
+reported states remain in this set; it is not the source of analyticity.
+
+The lemma assumes exact represented closure of the incoming state.  If
+$D_nu_n=\epsilon\ne0$, the rescaled equation contains $\epsilon/\tau$ and the
+same zero-step expansion is not uniform.  Full-operator commit carries the
+accepted terminal residual into the next step, while the remaining
+floating-point residual is recorded as a numerical perturbation rather than
+an analytic existence condition.
+
+The lemma identifies the unique local solution branch; it does not assert that
+a particular nonlinear iteration reaches that branch.  The conditional
+convergence of the block Picard map is treated separately in
+\cref{thm:local_coupled_closure}.
+
+\begin{proposition}[Local configuration-placement defect]
+\label{prop:actual_ccop_local_defect}
+Assume the hypotheses of
+\cref{lem:regularized_local_ccop_branch}, let the exact solution and pressure
+of \eqref{eq:semidiscrete_constrained_flow} be sufficiently smooth, and take
+$\gamma=1/2$.  Suppose the configuration-force predictor satisfies
+\begin{align}
+ u^\star(\tau)
+ &=u_n+\tau f_n+\frac{\tau^2}{2}f_n'[u_n]+O_h(\tau^3),
+ \label{eq:second_order_force_velocity_predictor}\\
+ x^\star(\tau)
+ &=x_n+\tau u_n+\frac{\tau^2}{2}f_n+O_h(\tau^3).
+ \label{eq:second_order_force_position_predictor}
+\end{align}
+Then, in any fixed equivalent finite-dimensional norm,
+\begin{equation}
+ u_{T,\Th}^h-u_h(t_n+\tau)
+ =\left(\frac12-\Th\right)\tau^2
+   \Pi_n G_n'[u_n]p_n+O_h(\tau^3),
  \qquad
  \Pi_n=I-G_n(D_nG_n)^{-1}D_n.
  \label{eq:actual_ccop_local_velocity_defect}
@@ -487,55 +597,76 @@ must be combined with a separate spatial-consistency estimate.
 \end{proposition}
 
 \begin{proof}
-Differentiating the exact constraint at $t_n$ gives
-$D_nG_np_n=D_n'[u_n]u_n$.  The $O(\dt)$ term of the numerical terminal
-constraint gives the same equation for the leading numerical multiplier;
-bijectivity of $D_nG_n$ therefore permits the expansion
-$p_\Th^h=p_n+\dt\pi_1+O_h(\dt^2)$.  Trapezoidal kinematics gives
-$x_T=x_n+\dt u_n-\tfrac12\dt^2G_np_n+O_h(\dt^3)$, and hence
+The lemma gives
+$p_\Th^h=p_n+\tau\pi_1+O_h(\tau^2)$.  The predictor and trapezoidal
+kinematics give
+\begin{equation*}
+ x_T=x_n+\tau u_n+\frac{\tau^2}{2}(f_n-G_np_n)+O_h(\tau^3),
+\end{equation*}
+so the numerical and exact terminal positions agree through $O_h(\tau^2)$.
+Moreover,
 \begin{equation*}
  G(x_\Th)p_\Th^h
- =G_np_n+\dt\bigl(G_n\pi_1+\Th G_n'[u_n]p_n\bigr)
-  +O_h(\dt^2).
+ =G_np_n+\tau\bigl(G_n\pi_1+\Th G_n'[u_n]p_n\bigr)
+  +O_h(\tau^2).
 \end{equation*}
-The exact semidiscrete velocity has the expansion
+The exact semidiscrete velocity satisfies
 \begin{equation*}
- u_h(t_n+\dt)=u_n-\dt G_np_n
- -\frac{\dt^2}{2}\bigl(G_n\dot p_n+G_n'[u_n]p_n\bigr)
- +O_h(\dt^3).
+ u_h(t_n+\tau)=u_n+\tau(f_n-G_np_n)
+ +\frac{\tau^2}{2}
+ \bigl(f_n'[u_n]-G_n'[u_n]p_n-G_n\dot p_n\bigr)
+ +O_h(\tau^3).
 \end{equation*}
-The exact and numerical terminal positions agree through $O_h(\dt^2)$.
-Subtracting their terminal constraints therefore shows that the coefficient
-of $\dt^2$ in the velocity difference lies in $\kernel D_n$.  With
-$\delta p=\pi_1-\dot p_n/2$, this condition is
+Subtracting the exact and numerical terminal constraints shows that the
+coefficient of $\tau^2$ in the velocity difference lies in $\kernel D_n$.
+With $\delta p=\pi_1-\dot p_n/2$, this condition is
 \begin{equation*}
  D_nG_n\delta p
  =-\left(\Th-\frac12\right)D_nG_n'[u_n]p_n.
 \end{equation*}
-Solving on the pressure quotient and substituting into the velocity expansion
-gives \eqref{eq:actual_ccop_local_velocity_defect}.
+Solving on $Q_{h,0}$ and substituting into the velocity expansion gives
+\eqref{eq:actual_ccop_local_velocity_defect}.
 \end{proof}
 
 The proof also identifies the multiplier stage:
 \begin{equation}
  p_\Th^h
- =p_n+\frac{\dt}{2}\dot p_n
-  -\left(\Th-\frac12\right)\dt
+ =p_n+\frac{\tau}{2}\dot p_n
+  -\left(\Th-\frac12\right)\tau
    (D_nG_n)^{-1}D_nG_n'[u_n]p_n
-  +O_h(\dt^2).
+  +O_h(\tau^2).
  \label{eq:actual_ccop_multiplier_stage}
 \end{equation}
 Thus the midpoint coefficient represents both the instantaneous midpoint
 pressure and the step-average pressure through first order; generic endpoint
-coefficients differ from their endpoint samples at $O(\dt)$.  This is a
+coefficients differ from their endpoint samples at $O(\tau)$.  This is a
 consequence of the terminal constraint solve, whereas centering the geometric
 operator remains the independent choice controlled by $\Th$.
+
+For $f(x)=-A_fx$, expansion of the implicit-midpoint predictor
+\eqref{eq:conservative_force_predictor} gives
+\begin{align*}
+ u^\star
+ &=u_n-\tau A_fx_n-\frac{\tau^2}{2}A_fu_n+O_h(\tau^3)
+  =u_n+\tau f_n+\frac{\tau^2}{2}f_n'[u_n]+O_h(\tau^3),\\
+ x^\star
+ &=x_n+\tau u_n-\frac{\tau^2}{2}A_fx_n+O_h(\tau^3)
+  =x_n+\tau u_n+\frac{\tau^2}{2}f_n+O_h(\tau^3).
+\end{align*}
+Thus \eqref{eq:second_order_force_velocity_predictor}--
+\eqref{eq:second_order_force_position_predictor} hold, and
+\cref{prop:actual_ccop_local_defect} covers force-free Case~1 and the
+conservative-force architecture used in Cases~2 and~3.  Velocity-dependent
+viscous terms and split operators require a separate stage-consistency
+analysis.
 
 The leading term has a direct geometric interpretation: only the component of
 the changing pressure-action direction that survives the current constrained
 projector contributes to the local velocity defect.  Thus midpoint placement
-cancels the $O(\dt^2)$ configuration term for the actual force-free pressure
-solve, not merely for an externally prescribed sample of $g(t)$.  Relative to
+cancels the $O(\dt^2)$ configuration term for the actual CCOP solve under
+\eqref{eq:second_order_force_velocity_predictor}--
+\eqref{eq:second_order_force_position_predictor}, not merely for an externally
+prescribed sample of $g(t)$.  Relative to
 a continuum solution, the corresponding stage estimate must retain the
 spatial floor, for example
 \begin{equation}
@@ -543,15 +674,14 @@ spatial floor, for example
  \le C_t\dt^2+C_sh^r,
  \label{eq:space_time_stage_floor}
 \end{equation}
-where $r$ is established by the spatial action audit.  External-force,
-viscous, splitting, and nonhomogeneous-boundary defects require their own
-matching-order predictor estimates and are not covered by
-\cref{prop:actual_ccop_local_defect}.
+where $r$ is established by the spatial action audit.  Velocity-dependent
+viscous terms, nonmatching force splittings, and nonhomogeneous-boundary stages
+require separate consistency arguments.
 
 Proposition~\ref{prop:placed_impulse_order} is both stronger and narrower than calling $\Th$ an
 unqualified method order.  It proves a pressure-substep design rule under the
 stage-consistency hypothesis.  If the placed pressure, configuration path,
-nonpressure predictor, viscous treatment, or force splitting gives only
+nonpressure predictor, or split stage gives only
 $\eta_{1/2}^h=O(\dt)$, that term restores an $O(\dt^2)$ local defect even at
 $\Th=1/2$.  Conversely, changing $\Th$ in the present algorithm changes only
 the action geometry: it adds no pressure unknown, Runge--Kutta stage, or
@@ -660,10 +790,12 @@ $u^\star=u_n$ and $x^\star=x_n+\dt u_n$, so
  \label{eq:gamma_trapezoidal_origin}
 \end{equation}
 The conservative-force predictor used later builds the same trapezoidal
-kinematic relation into $x^\star$.  Matching-order force and viscous stages
-preserve the pressure-step cancellation in
-\cref{prop:placed_impulse_order}.  The projector introduced below is the
-frozen linear algebra embedded in this nonlinear geometry coupling.
+kinematic relation into $x^\star$ and satisfies
+\eqref{eq:second_order_force_velocity_predictor}--
+\eqref{eq:second_order_force_position_predictor}.  Velocity-dependent viscous
+or split operators are outside the local result.  The projector introduced
+below is the frozen linear algebra embedded in this nonlinear geometry
+coupling.
 
 \subsection{Weak placed problem and relative-deformation solvability}
 
@@ -883,10 +1015,8 @@ This proximity result concerns consistent small-step families.  Together with
 \cref{prop:placed_impulse_order}, it separates two related effects: the
 correction range changes by $O(\dt)$, while acting on an $O(\dt)$ pressure
 source changes the one-step velocity by $O(\dt^2)$.  Midpoint placement
-cancels the leading impulse-quadrature term, whereas terminal placement
-retains it.  The same conclusion extends to a complete scheme when its force
-and viscous stages satisfy the consistency condition
-\eqref{eq:second_order_stage_consistency}.
+cancels the leading configuration term under the predictor hypotheses of
+\cref{prop:actual_ccop_local_defect}, whereas terminal placement retains it.
 
 The same range variation that produces projector obliqueness also controls the
 frozen placement sensitivity of the pressure work.  The following identity
@@ -991,8 +1121,9 @@ unique geometry; \eqref{eq:nonlinear_frozen_solution_map} supplies the unique
 pressure, and the velocity follows from \eqref{eq:nonlinear_velocity}.
 \end{proof}
 
-Since $b_\Th$ contains $\dt^{-1}$, the generic small-step contraction scales
-as $O(\dt)$.  In the discrete calculations, the measured Riesz gap supplies
+For a fixed spatial discretization, the generic small-step bound scales as
+$O(\dt)$ because $b_\Th$ contains $\dt^{-1}$.  No $h$-uniform contraction rate
+is claimed.  In the discrete calculations, the measured Riesz gap supplies
 the computable inverse factor
 $C_L\le\beta_{T,\Th,h}^{-1}$ in the corresponding Riesz norms.  The iteration
 histories measure convergence, and the raw Jacobians check geometric
@@ -2190,8 +2321,8 @@ $a_h$ decreases at rate 2.007 while $b_h$ changes by less than $0.25\%$
 (\cref{sec:coefficient_mixed_audit}).  This empirical crossover accounts for
 the intermediate fitted coefficient rate.  It does not contradict
 \cref{prop:actual_ccop_local_defect}: the present diagnostic starts from an
-accumulated numerical state and includes the conservative-force predictor,
-whereas that proposition is an exact-start force-free fixed-space result.
+accumulated numerical state, whereas that proposition is an exact-start
+fixed-space result for a second-order matching predictor.
 The exact-start action audit in \cref{tab:affine_stage_rates} applies to the
 affine reference.  Here
 \eqref{eq:test2_temporal_self_difference_rates} establishes the measured

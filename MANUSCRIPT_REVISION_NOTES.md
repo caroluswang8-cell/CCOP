@@ -64,6 +64,31 @@ and serialization details remain in the machine-readable output and code.
 The unsupported sentence that attributed endpoint-work symmetry to action
 reproduction alone was replaced rather than supplemented.
 
+## Local-branch theory repair
+
+- The zero-step CCOP residual is now treated as a degenerate equation:
+  `R(p,0)=0` for every pressure coefficient when the incoming represented
+  constraint is exact.  The manuscript no longer infers a numerical pressure
+  expansion directly from invertibility of `D_n G_n`.
+- A new rescaled local-branch lemma introduces
+  `x_T=x_n+tau u_n+tau^2 xi`, divides the terminal constraint by `tau`, and
+  uses Hadamard extension plus the implicit-function theorem.  Its block
+  Jacobian is invertible exactly when the gauge-reduced response
+  `D_n G_n:Q_{h,0}->Z_h` is bijective.
+- The lemma establishes a unique local numerical branch and derives
+  `p_Theta(0)=p_n` for a matching configuration-force predictor.  Placement
+  enters only in the next branch coefficient.
+- The subsequent local-defect proposition proves the midpoint cancellation
+  for the force-free predictor and for the second-order implicit-midpoint
+  conservative-force predictor used in Cases 2 and 3.  The force-predictor
+  expansion is shown explicitly.
+- The result is stated at fixed spatial discretization.  No global temporal
+  theorem, mesh-uniform implicit-function neighborhood, material CFL law, or
+  extension to velocity-dependent viscosity is claimed.
+- The exact-start condition remains an analytic hypothesis.  Floating-point
+  residuals enter the rescaled equation as a numerical perturbation; no
+  `tau >= C epsilon` existence rule is asserted.
+
 ## Quantitative compression
 
 - Before: 3,484 lines and 16,598 words.
