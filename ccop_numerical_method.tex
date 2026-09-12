@@ -62,7 +62,7 @@
 \maketitle
 
 \begin{abstract}
-Standard semi-implicit Lagrangian projection methods evaluate incompressibility and pressure action on one geometric stage. We show that this common-stage construction hides a configuration-assignment problem. The accepted velocity constraint belongs to the terminal configuration, whereas the pressure action belongs to a separately selected material configuration. We formulate this separation as configuration-consistent oblique projection (CCOP), with cross response \(D_TG_\Theta\) and one scalar pressure equation. The parameter \(\Theta\) is geometric rather than merely temporal: it assigns the pressure operator without moving the terminal incompressibility target. Every admissible placement satisfies an exact discrete pressure work--energy identity with its represented action, while the placement determines the value and physical accuracy of that work. We establish the projection structure, relative-deformation solvability, and a local branch of the coupled step. On a fixed spatial discretization, midpoint action placement cancels the leading configuration-induced velocity defect for the force-free step and the second-order conservative-force predictor used here. Affine tests isolate terminal closure, projector obliqueness, and pressure work; a matched ISPH comparison shows their long-time consequences. A strictly nonaffine differential vortex verifies transported operators and complete evolution under spatially varying material shear. CCOP therefore makes the finite-step relation between terminal closure and pressure work explicit without adding a pressure stage.
+Standard semi-implicit Lagrangian projection methods evaluate incompressibility and pressure action on one geometric stage. We show that this construction hides a configuration-assignment problem. The accepted velocity constraint belongs to the terminal configuration, whereas the pressure action belongs to a separately selected material configuration. We formulate this separation as configuration-consistent oblique projection (CCOP), with cross response \(D_TG_\Theta\) and one scalar pressure equation. The parameter \(\Theta\) assigns the pressure operator geometrically while preserving the terminal incompressibility target. Every admissible placement satisfies an exact discrete pressure work--energy identity with its represented action, while placement determines the value and physical accuracy of that work. We establish the projection structure, relative-deformation solvability, and a local branch of the coupled step. On a fixed spatial discretization, midpoint action placement cancels the leading configuration-induced velocity defect for the force-free step and the second-order conservative-force predictor used here. Affine tests isolate terminal closure, projector obliqueness, and pressure work; a matched ISPH comparison shows their long-time consequences. A strictly nonaffine differential vortex verifies transported operators and complete evolution under spatially varying material shear. CCOP therefore makes the finite-step relation between terminal closure and pressure work explicit with one pressure stage.
 \end{abstract}
 
 \noindent\textbf{Keywords.}
@@ -79,7 +79,7 @@ Pressure projection is one of the most effective ways to impose incompressibilit
 
 Particle projection methods have advanced along several complementary directions, including pressure-source construction, boundary treatment, spatial consistency, and time integration \cite{CumminsRudman1999,XuStansbyLaurence2009,KhayyerGotoh2011,GotohKhayyerGotoh2024}. Nair and Tomar~\cite{NairTomar2015} connected incompressibility to the deformation and volume state of the updated particle configuration through a deformation-gradient-based pressure formulation. Consistent high-order ISPH improves the spatial pressure operators and boundary treatment together \cite{ZhangEtAl2024}, while Matsunaga~\cite{Matsunaga2025} develops trajectory-based pressure equations with high-order Runge--Kutta integration.  These developments address complementary levels of projection design: volume-state representation, spatial consistency, and temporal integration. Here we address another structural level---the configuration assignment underlying the projection itself. At the continuum level we require incompressibility on the accepted terminal configuration, so that the corrected velocity is tangent to the terminal volume-preserving state; the particle scheme closes its explicitly identified pressure-test representation of that tangent condition. The remaining question is where the pressure gradient should act along the material path. This leads naturally to a projection with terminal divergence and an independently placed intermediate pressure action.
 
-A related separation appears in constrained mechanics. Discrete mechanics and variational integrators treat forces and constraints as distinct ingredients of the discrete update \cite{MarsdenWest2001}; RATTLE and discrete null-space methods similarly organize constraint enforcement within structure-preserving time integration \cite{Andersen1983,Betsch2005}; and related ideas have been used in incompressible particle and geometric fluid discretizations \cite{SuzukiKoshizukaOka2007,PavlovEtAl2011,GawlikEtAl2011}. Our construction is conceptually aligned with this separation, but remains within the classical pressure-projection/PPE architecture. The specific issue here is geometric: once incompressibility is assigned to the terminal configuration, the pressure multiplier must still be represented on an appropriate material configuration. CCOP makes this configuration assignment explicit while retaining a scalar pressure solve.
+A useful structural analogue appears in constrained mechanics. Discrete mechanics and variational integrators assign forces and constraints distinct roles in an update \cite{MarsdenWest2001}. RATTLE and discrete null-space methods organize the same distinction within structure-preserving time integration \cite{Andersen1983,Betsch2005}. Related constructions also appear in incompressible particle and geometric fluid discretizations \cite{SuzukiKoshizukaOka2007,PavlovEtAl2011,GawlikEtAl2011}. CCOP develops the corresponding configuration assignment inside a pressure-projection/PPE factorization: terminal geometry carries the accepted constraint, and a selected material geometry carries the pressure multiplier action.
 
 Let $D_T$ denote the tangent of the accepted terminal incompressibility
 constraint and let $G_\Theta$ denote the Piola pressure action represented on a
@@ -108,32 +108,30 @@ and therefore
 This is the central numerical structure of CCOP.  The terminal operator fixes
 the constraint that is actually accepted; the placed pressure operator fixes
 the correction range.  The oblique projector in
-\eqref{eq:intro_projector} is consequently the Schur-complement realization of
-the method, not an auxiliary geometric construction.
+\eqref{eq:intro_projector} is the Schur-complement realization of this
+configuration assignment.
 
-The distinction exposes a geometric degree of freedom without enlarging the
-pressure space.  We restrict the action to one real material configuration on the
+This distinction exposes a geometric degree of freedom while preserving the
+pressure-space dimension.  We restrict the action to one real material configuration on the
 affine labelled-position path
 \[
  x_\Theta=(1-\Theta)x_n+\Theta x_T.
 \]
-The parameter $\Theta$ assigns an operator to a material geometry; it is not,
-by itself, a temporal stage of the state integrator or of the pressure
-coefficient.  In particular, midpoint action produces the mixed response
-$D_TG_{1/2}$, not the common-stage response $D_{1/2}G_{1/2}$.  These responses
-coincide only under additional stage-consistency assumptions.
+The parameter $\Theta$ assigns an operator to a material geometry.  Temporal
+state advancement and pressure-coefficient staging remain separate choices.
+Midpoint action therefore produces the mixed response $D_TG_{1/2}$; a
+common-stage midpoint projection would instead use $D_{1/2}G_{1/2}$.  The two
+responses coincide under additional stage-consistency conditions.
 Changing $\Theta$ therefore changes
 $F_\Theta$, $J_\Theta$, $G_\Theta$, $D_TG_\Theta$, and the correction range,
 while retaining the same scalar pressure unknowns.  The midpoint choice is
-especially useful: it introduces
-no additional pressure stage, but under stage-consistent conditions it cancels
-the leading configuration-induced velocity defect.  The numerical comparison is
-therefore not between two different spatial methods; it is between pressure
-architectures that use the same terminal target but represent the finite-step
-multiplier action differently.
+especially useful: it retains one pressure stage and, under stage-consistent
+conditions, cancels the leading configuration-induced velocity defect.  The
+numerical comparison therefore isolates configuration assignment within a
+fixed spatial discretization.
 
-The contribution is the configuration assignment and its computable
-consequences, rather than a new algebraic identity for projectors.  The analysis
+The central contribution is this configuration assignment and its computable
+consequences.  The analysis
 links relative deformation to cross-response solvability, correction-range
 variation to projector obliqueness, and represented pressure work to an exact
 finite-step work--energy identity.  A fixed-space local-branch expansion of the actual CCOP equations
@@ -149,14 +147,15 @@ and action effects, then measure their accumulation against a
 same-discretization ISPH workflow.  A differential vortex exposes the spatial
 effect of nonaffine shear: differentiation amplifies boundary-action error,
 whereas manufactured pressure solves test how the inverse response transmits
-that error to the corrected action.  The comparisons
-use shared spatial operators within each case; the native-pressure variant
-used for the ISPH comparison is specified separately from the cofactor-action
-realization in the other cases.
+that error to the corrected action.  The comparisons use shared spatial
+operators within each case.  Case~2 uses its documented native-pressure
+convention, while Cases~1 and~3 use the cofactor action.
 
 The remainder is organized as follows.  \Cref{sec:configuration_assignment}
-sets the terminal and action configurations.  \Cref{sec:ccop_analysis} derives
-the cross-configuration pressure response and its Schur projector.
+sets the terminal constraint geometry, and
+\cref{sec:finite_step_action_work} develops action placement and pressure work.
+\Cref{sec:ccop_analysis} derives the cross-configuration pressure response and
+its Schur projector.
 \Cref{sec:meshless_discretization} describes the meshless realization and
 full-operator transport.  The three numerical cases are presented in
 \cref{sec:result1,sec:result2,sec:result3}, followed by the combined discussion
@@ -211,17 +210,13 @@ For smooth fields, the associated physical divergence is
   =J_\alpha^{-1}\Div_X(J_\alpha F_\alpha^{-1}v).
   \label{eq:strong_piola_divergence}
 \end{equation}
-The material-cofactor pressure action used in the following continuum
-formulation and in Cases~1 and~3 is
+The material-cofactor pressure action is
 \begin{equation}
   \G_\alpha q
   =\rho_0^{-1}J_\alpha F_\alpha^{-T}\nabla_Xq
   =\rho_0^{-1}\cof(F_\alpha)\nabla_Xq.
   \label{eq:continuum_pressure_action}
 \end{equation}
-Case~2 retains the native physical-pressure gradient of its SPH2/MLS2
-implementation, without the factor $J_\alpha$; its convention and matched
-ISPH comparison are specified in \cref{eq:case2_physical_action}.
 If the boundary term in \eqref{eq:weak_divergence_continuum} vanishes in the
 actual trial and test spaces, then
 \begin{equation}
@@ -274,48 +269,12 @@ $J_T^{-1}\Div_X(J_TF_T^{-1}w)$ to the same trace.  Division by $J_T$ gives
 the logarithmic variation.
 \end{proof}
 
-This identity is continuous.  The meshless discretization does not introduce
-a discrete volume functional $\mathcal C_{T,h}$ and does not assert
-$D\mathcal C_{T,h}=D_{T,h}^q$.  Instead, let $I_h$ denote particle sampling and
-let $\mathcal R_h^q$ restrict a smooth scalar field to the pressure-test labels.
-The discrete consistency requirement is
-\begin{equation}
- e_{D,h}(w)=
- \norm[M_Z]{D_{T,h}^q I_hw-\mathcal R_h^q(D_T^{\rm str}w)}
- \longrightarrow0
- \qquad (h\longrightarrow0),
- \label{eq:discrete_terminal_tangent_consistency}
-\end{equation}
-for smooth $w$ and a regular cloud family.  Case~3 measures
-\eqref{eq:discrete_terminal_tangent_consistency} directly, including its
-boundary-layer decomposition.
-
-Pressure elimination also requires consistency of the composite response.
-For a smooth pressure $q$, let $I_h^Qq$ denote its coefficient samples and set
-\begin{align}
- \varepsilon_{G,h}(q)
- &=G_{\Th,h}I_h^Qq-I_h(\mathcal G_\Th q),\notag\\
- \varepsilon_{DG,h}(q)
- &=D_{T,h}^qG_{\Th,h}I_h^Qq
-   -\mathcal R_h^q(D_T^{\rm str}\mathcal G_\Th q)\notag\\
- &=\underbrace{D_{T,h}^qI_h(\mathcal G_\Th q)
-   -\mathcal R_h^q(D_T^{\rm str}\mathcal G_\Th q)}_{\text{$D$-only error}}
-   +\underbrace{D_{T,h}^q\varepsilon_{G,h}(q)}_{\text{propagated action error}}.
- \label{eq:discrete_composite_consistency}
-\end{align}
-The norm of the sum must tend to zero independently of
-\eqref{eq:discrete_terminal_tangent_consistency}.  Second-order action accuracy
-in $M_U$ alone does not imply second-order accuracy after differentiation:
-an $O(h^{-1})$ discrete derivative bound permits an $O(h)$ propagated error.
-Case~3 measures both terms of \eqref{eq:discrete_composite_consistency}.
-
-CCOP therefore controls a represented terminal pressure-test tangent, not
-the derivative of an asserted discrete volume constraint.  The residual
-$D_{T,h}^qu_h^T$ is controlled by the pressure solve, whereas $J_h-1$, $A_J$,
-and $A_\Gamma$ also depend on spatial and temporal discretization.  In
-particular, finite-step state error can persist in a spatially exact affine
-subspace.  Direct Jacobian closure and target--action assignment address
-different parts of the discrete problem.
+The spatial method realizes this continuum tangent in a finite pressure-test
+space.  Its consistency with $D_T^{\rm str}$ and with the composite response
+$D_T^{\rm str}\mathcal G_\Th$ is defined in
+\cref{sec:discrete_operator_consistency}.  This separation preserves the
+state--tangent interpretation while allowing the numerical experiments to
+measure spatial reconstruction and finite-step state error independently.
 
 This is the point at which the finite-step constraint viewpoint meets the
 projection architecture.  The accepted state fixes the terminal constraint
@@ -398,7 +357,10 @@ assignment is
   \label{eq:terminal_assignment}
 \end{equation}
 
-\subsection{Why the pressure action is placed}
+\section{Finite-step pressure action and work}
+\label{sec:finite_step_action_work}
+
+\subsection{Geometric action placement and impulse accuracy}
 
 The pressure contribution to material momentum is an interval impulse,
 \begin{equation}
@@ -458,10 +420,13 @@ Subtracting $\dt\eta_\Th^h$ proves
 cancellation at $\Th=1/2$.
 \end{proof}
 
-This proposition is an accuracy statement for the represented impulse, not
-the source of the exact work identity established below.  It isolates
-quadrature from pressure-stage construction and geometric operator placement.  The
-actual CCOP residual is degenerate at zero step size: if $D_nu_n=0$, then
+The proposition separates impulse accuracy into quadrature, pressure-stage,
+and geometric-placement contributions.  Exact discrete pressure work follows
+from a different identity established below.
+
+\subsection{Local branch and configuration-placement defect}
+
+The actual CCOP residual is degenerate at zero step size: if $D_nu_n=0$, then
 $\mathcal R(p,0)=0$ for every pressure coefficient.  The following rescaling
 first establishes the numerical pressure branch needed for a local expansion.
 Indeed, because $D_px_T=O_h(\tau^2)$,
@@ -562,20 +527,12 @@ configuration.  The limiting pressure is independent of $\Th$ because every acti
 configuration reduces to $x_n$ at $\tau=0$; placement enters the next
 coefficient of the branch.  For the implemented fixed-stencil, fixed-label
 operators, the determinant, inverse, and cofactor formulas are analytic on the
-open set $j_Tj_\Th\ne0$.  The raw-determinant acceptance test verifies that the
-reported states remain in this set; it is not the source of analyticity.
-
-The lemma assumes exact represented closure of the incoming state.  If
-$D_nu_n=\epsilon\ne0$, the rescaled equation contains $\epsilon/\tau$ and the
-same zero-step expansion is not uniform.  Full-operator commit carries the
-accepted terminal residual into the next step, while the remaining
-floating-point residual is recorded as a numerical perturbation rather than
-an analytic existence condition.
-
-The lemma identifies the unique local solution branch; it does not assert that
-a particular nonlinear iteration reaches that branch.  The conditional
-convergence of the block Picard map is treated separately in
-\cref{thm:local_coupled_closure}.
+open set $j_Tj_\Th\ne0$, which is monitored by the raw-determinant acceptance
+test.  The expansion starts from exact represented closure.  An incoming
+residual $D_nu_n=\epsilon$ enters the rescaled equation as
+$\epsilon/\tau$ and is tracked as a numerical perturbation.  The lemma
+characterizes the local solution branch; convergence of the block Picard map
+is established separately in \cref{thm:local_coupled_closure}.
 
 \begin{proposition}[Local configuration-placement defect]
 \label{prop:actual_ccop_local_defect}
@@ -667,17 +624,14 @@ For $f(x)=-A_fx$, expansion of the implicit-midpoint predictor
 Thus \eqref{eq:second_order_force_velocity_predictor}--
 \eqref{eq:second_order_force_position_predictor} hold, and
 \cref{prop:actual_ccop_local_defect} covers force-free Case~1 and the
-conservative-force architecture used in Cases~2 and~3.  Velocity-dependent
-viscous terms and split operators require a separate stage-consistency
-analysis.
+conservative-force architecture used in Cases~2 and~3.
 
 The leading term has a direct geometric interpretation: only the component of
 the changing pressure-action direction that survives the current constrained
 projector contributes to the local velocity defect.  Thus midpoint placement
 cancels the $O(\dt^2)$ configuration term for the actual CCOP solve under
 \eqref{eq:second_order_force_velocity_predictor}--
-\eqref{eq:second_order_force_position_predictor}, not merely for an externally
-prescribed sample of $g(t)$.  Relative to
+\eqref{eq:second_order_force_position_predictor}.  Relative to
 a continuum solution, the corresponding stage estimate must retain the
 spatial floor, for example
 \begin{equation}
@@ -689,14 +643,13 @@ where $r$ is established by the spatial action audit.  Velocity-dependent
 viscous terms, nonmatching force splittings, and nonhomogeneous-boundary stages
 require separate consistency arguments.
 
-Proposition~\ref{prop:placed_impulse_order} is both stronger and narrower than calling $\Th$ an
-unqualified method order.  It proves a pressure-substep design rule under the
-stage-consistency hypothesis.  If the placed pressure, configuration path,
-nonpressure predictor, or split stage gives only
-$\eta_{1/2}^h=O(\dt)$, that term restores an $O(\dt^2)$ local defect even at
-$\Th=1/2$.  Conversely, changing $\Th$ in the present algorithm changes only
-the action geometry: it adds no pressure unknown, Runge--Kutta stage, or
-pressure equation per nonlinear geometry iteration.
+Proposition~\ref{prop:placed_impulse_order} therefore gives a pressure-substep
+design rule under stage consistency.  Second-order midpoint stage accuracy
+produces a third-order local impulse defect, while an $O(\dt)$ stage error
+produces an $O(\dt^2)$ local defect.  Varying $\Th$ changes the action geometry
+within the same one-stage scalar pressure solve.
+
+\subsection{Pressure work--energy identity}
 
 The target/action roles lead to
 \begin{equation}
@@ -742,14 +695,14 @@ $u_T=u^\star-\dt g_\Th$ gives the second.
 \end{proof}
 
 We call \eqref{eq:discrete_pressure_work_energy} exact discrete work
-consistency with the represented pressure action.  It does not assert that
-$W_{p,\Th}^{\dt}$ is a high-order approximation of the physical pressure work
+consistency with the represented pressure action.  Physical work accuracy
+instead compares $W_{p,\Th}^{\dt}$ with
 \begin{equation}
  W_p^{\rm ex}
  =-\int_{t_n}^{t_{n+1}}\ip[m]{u(t)}{\G(t)p(t)}\,dt.
  \label{eq:exact_continuous_pressure_work}
 \end{equation}
-That approximation depends on the geometric action placement, pressure-stage
+This approximation depends on the geometric action placement, pressure-stage
 consistency, the nonpressure predictor, and any force or viscous splitting.
 Accordingly, $D_T$ selects the represented admissible terminal state, whereas
 $G_\Th p_\Th$ selects the pressure direction and the work realized by the
@@ -802,12 +755,10 @@ between the two step endpoints,
   x_\Th=x_n+\Th(x_T-x_n),\qquad 0\le\Th\le1.
   \label{eq:linear_action_path}
 \end{equation}
-This path assigns the pressure operator to a material configuration; it does
-not prescribe a temporal stage for every field and does not assert that the
-method resolves a unique substep trajectory.  Hence $\Th=1/2$ defines the
-mixed-configuration response $D_TG_{1/2}$ rather than a common-stage midpoint
-projection.  Its role is to keep every placement inside the space of
-compatible material configurations while retaining a single scalar
+This one-point path parameterizes admissible pressure-operator geometries
+independently of the state time integrator.  Hence $\Th=1/2$ defines the
+mixed-configuration response $D_TG_{1/2}$, while a common-stage midpoint
+method would use $D_{1/2}G_{1/2}$.  Every placement retains a single scalar
 pressure/PPE solve.  With the current spatial gradient $\Grad_n$,
 \begin{align}
  H_T&=I+\Grad_n(x_T-x_n), & j_T&=\det H_T,\label{eq:relative_terminal_F}\\
@@ -833,8 +784,8 @@ residual,
  x_T(p)=x^\star-\gamma\dt^2G_\Th[x_T(p)]p.
  \label{eq:reduced_nonlinear_residual}
 \end{equation}
-The value $\gamma=1/2$ is fixed by trapezoidal particle kinematics rather than
-tuned to the work-neutral placement.  In the force-free case
+Trapezoidal particle kinematics fixes $\gamma=1/2$, independently of the
+work-neutral placement.  In the force-free case
 $u^\star=u_n$ and $x^\star=x_n+\dt u_n$, so
 \begin{equation}
  x_T=x_n+\frac{\dt}{2}(u_n+u_T)
@@ -1249,9 +1200,9 @@ response, while the all-particle matrix
 $\widehat D_T^{\rm ind}\in\R^{N\times2N}$ supplies an independent physical
 divergence diagnostic.
 
-The row-restricted $D_T^q$ is a represented pressure-test operator, not the
-derivative of the reported polygonal or Jacobian area.  Consequently,
-$D_T^qu_T=0$ is an exact algebraic statement in $Q_{h,0}^*$, while
+The row-restricted $D_T^q$ represents the terminal tangent in the selected
+pressure-test space.  Consequently, $D_T^qu_T=0$ is an exact algebraic
+statement in $Q_{h,0}^*$, while
 \eqref{eq:discrete_terminal_tangent_consistency}, the all-particle independent
 divergence, and the two area measures determine its spatial fidelity to the
 continuum tangent and state equations.
@@ -1262,15 +1213,50 @@ mean-zero quotient.  If $Z_p$ spans
   Q_{h,0}=\{p_h:\bm 1^TM_Qp_h=0\},
   \label{eq:periodic_mean_zero_space}
 \end{equation}
-then the response is formed on the quotient rather than by fixing a pressure
-node.  No periodic pin, deleted divergence row, spectral mode filtering, or
-diagonal regularization is used.
+then the response is formed on the quotient.  This construction retains every
+divergence row and removes only the constant pressure gauge.
 
 The free-boundary row restriction defines the concrete pressure-test space.
 Rank, scaled singular values, manufactured $G$, $D$, and $DG$ actions, and
 refinement establish its admissibility on every reported cloud.  Directly
 testing the composition is essential because separate polynomial reproduction
-of $D_h$ and $G_h$ does not determine the cross response.
+of $D_h$ and $G_h$ leaves the cross-response accuracy undetermined.
+
+\subsection{Discrete operator consistency}
+\label{sec:discrete_operator_consistency}
+
+Let $I_h$ denote particle sampling, let $I_h^Q$ map smooth pressures to their
+coefficients, and let $\mathcal R_h^q$ restrict scalar fields to pressure-test
+labels.  Consistency of the represented terminal tangent is measured by
+\begin{equation}
+ e_{D,h}(w)=
+ \norm[M_Z]{D_{T,h}^q I_hw-\mathcal R_h^q(D_T^{\rm str}w)}
+ \longrightarrow0
+ \qquad (h\longrightarrow0)
+ \label{eq:discrete_terminal_tangent_consistency}
+\end{equation}
+for smooth $w$ and a regular cloud family.  The composite pressure response
+has the error decomposition
+\begin{align}
+ \varepsilon_{G,h}(q)
+ &=G_{\Th,h}I_h^Qq-I_h(\mathcal G_\Th q),\notag\\
+ \varepsilon_{DG,h}(q)
+ &=D_{T,h}^qG_{\Th,h}I_h^Qq
+   -\mathcal R_h^q(D_T^{\rm str}\mathcal G_\Th q)\notag\\
+ &=\underbrace{D_{T,h}^qI_h(\mathcal G_\Th q)
+   -\mathcal R_h^q(D_T^{\rm str}\mathcal G_\Th q)}_{\text{$D$-only error}}
+   +\underbrace{D_{T,h}^q\varepsilon_{G,h}(q)}_{\text{propagated action error}}.
+ \label{eq:discrete_composite_consistency}
+\end{align}
+The two limits are tested independently.  In particular, an $O(h^{-1})$
+bound for the discrete derivative can convert a second-order action error into
+a first-order propagated response error.  Case~3 reports both contributions,
+including their boundary-layer decomposition.
+
+The pressure solve enforces $D_{T,h}^qu_h^T=0$ in the selected test space.
+The quantities $J_h-1$, $A_J$, and $A_\Gamma$ measure the associated
+finite-step state geometry.  Together, these diagnostics separate represented
+tangent closure, continuum consistency, and volume-state accuracy.
 
 \subsection{Relative transport of the accepted operators}
 
@@ -1295,8 +1281,8 @@ Piola and cofactor transports are
 \end{align}
 The matrices $jH^{-1}$ and $jH^{-T}$ act particlewise on the velocity
 blocks.  Formula \eqref{eq:discrete_action_transport} treats $G_n$ as the
-complete current pressure-action state; a cumulative Jacobian is not
-multiplied a second time.
+complete current pressure-action state.  The recursive update therefore
+applies the relative cofactor factor exactly once.
 
 The geometry derivative reconstructs relative deformation and is transported
 by the vector-gradient
@@ -1625,7 +1611,10 @@ separate from projector closure, which is exact for the matrix pair actually
 solved.  Their nonaffine refinement is reported in
 \cref{tab:supp_constant_translation_audit}.
 
-\section{Case 1: Terminal closure and pressure work are independent finite-step properties}
+\section{Numerical results}
+\label{sec:numerical_results}
+
+\subsection{Case 1: Terminal closure and pressure work are independent finite-step properties}
 \label{sec:result1}
 
 An affine solution lying in the polynomial reproducing space isolates the
@@ -1673,7 +1662,7 @@ pressure modes are reported in \cref{app:operator_audits}.  Because affine
 trace-free velocity and quadratic pressure are reproduced, this problem
 identifies finite-step structure rather than a spatial rate.
 
-\subsection{The anchor determines which constraint is closed}
+\subsubsection{The anchor determines which constraint is closed}
 
 At $\Th=1/2$ we use the same predictor and placed action but form the pressure
 equation with $D_n^q$, $D_\star^q$, or $D_T^q$.  For
@@ -1730,7 +1719,7 @@ control, which imposes an orthogonal endpoint baseline by definition.}
 \label{fig:test1_mechanism}
 \end{figure}
 
-\subsection{The placed action determines projector geometry and pressure work}
+\subsubsection{The placed action determines projector geometry and pressure work}
 
 With the terminal target fixed, a sweep over
 $\Th=0,0.05,\ldots,1$ at $\dt=0.02$ shows that every placement satisfies
@@ -1902,15 +1891,15 @@ and have essentially identical Picard counts in this test, the second-order
 midpoint pressure path requires no additional pressure stage.
 
 
-\section{Case 2: Long-time ISPH comparison under matched spatial discretization}
+\subsection{Case 2: Long-time ISPH comparison under matched spatial discretization}
 \label{sec:result2}
 
 Case~1 separately identifies the terminal target and pressure-action placement
 axes.  We now test the long-time consequence of replacing the classical
-predictor-configuration ISPH projection by the complete CCOP architecture,
-without repeating that one-step ablation.  Spatial reconstruction is
-deliberately prevented from setting the accuracy floor by using the
-two-dimensional conservative affine drop under a central potential force.  The
+predictor-configuration ISPH projection by the complete CCOP architecture.
+The two-dimensional conservative affine drop places the exact velocity and
+pressure derivatives in the polynomial design spaces, thereby isolating the
+long-time pressure update from spatial truncation.  The
 initial circular drop has $R=0.5$, the forcing frequency is $\Omega=1.2$, and
 the velocity field is affine,
 \begin{equation}
@@ -1921,8 +1910,8 @@ the velocity field is affine,
 while the body force is $-\Omega^2x$.  The exact motion remains affine and the
 pressure is quadratic, placing their spatial derivatives within the polynomial
 design spaces of the operators below.  The small moment regularization in the
-archived driver is specified in \cref{sec:case2_implementation_contract}; this
-case is not used to infer a spatial rate.  Writing the principal semi-axes as
+archived driver is specified in \cref{sec:case2_implementation_contract}.
+Writing the principal semi-axes as
 $a(t)$ and $b(t)=R^2/a(t)$, with $\delta=\dot a/a$, gives the scalar reference
 \begin{equation}
  \dot a=\delta a,
@@ -1937,17 +1926,16 @@ $a(t)$ and $b(t)=R^2/a(t)$, with $\delta=\dot a/a$, gives the scalar reference
 \end{equation}
 An independent DOP853 integration of \eqref{eq:case2_affine_reference} supplies
 the semi-axes, centre pressure, phase, and conservative energy exchange through
-$T=30$.  This construction makes the case a long-time test of the pressure
-update rather than of spatial approximation.
+$T=30$.  This construction targets the accumulated pressure-update error.
 
-\subsection{Matched ISPH--CCOP comparison}
+\subsubsection{Matched ISPH--CCOP comparison}
 
 We compare the same-discretization ISPH workflow $D_\star^qG_\star$ with CCOP
 $D_T^qG_{1/2}$ at $R/\Delta x=50$.  The archived \texttt{SPH2}
 driver uses a cubic SPH kernel to weight a quadratic MLS fit; the \texttt{MLS2}
-and \texttt{SPH2} strict drivers share this derivative construction and are not
-treated as independent spatial methods.  The pressure is a general nodal field
-with homogeneous Dirichlet boundary values, not a prescribed quadratic ansatz.
+and \texttt{SPH2} strict drivers provide two realizations of this shared
+derivative design.  The pressure uses a general nodal field with homogeneous
+Dirichlet boundary values.
 The common fixed material derivatives realize
 \begin{equation}
  D_\alpha^q=\mathcal R_h^q\!\left[
@@ -1956,11 +1944,11 @@ The common fixed material derivatives realize
  G_\alpha^{\rm phys}p=\rho_0^{-1}F_\alpha^{-T}\Grad_0^hp.
  \label{eq:case2_physical_action}
 \end{equation}
-The second operator acts on native physical-pressure coefficients and contains
-no $J_\alpha$ factor.  This convention is identical in both branches.  For a
-spatially uniform affine Jacobian, multiplying $G_\alpha^{\rm phys}$ by
-$J_\alpha$ leaves its range and the frozen projector unchanged, but rescales
-the pressure coefficient.  Such equivalence is not asserted for nonaffine maps.
+The second operator uses the native physical-pressure convention
+$F_\alpha^{-T}\Grad_0^h$.  Both branches use this convention.  For a spatially
+uniform affine Jacobian, the cofactor variant has the same range and frozen
+projector, with a rescaled pressure coefficient.  Case~3 uses the full
+cofactor convention for its nonaffine maps.
 
 The baseline is a \emph{same-discretization ISPH (star--star) implementation}:
 it follows the predictor--pressure--corrector workflow of projection-based
@@ -1975,12 +1963,11 @@ operators evaluated on the pressure-free predicted configuration.  It solves
 \end{equation}
 The particles, material stencils, pressure unknowns, boundary labels,
 quadrature, force predictor, step size, and position-correction coefficient
-are shared with CCOP.  This is an implementation-level comparison of the
-ISPH workflow on the present discretization, not a reproduction of every
-variant of ISPH or a comparison with a density/Jacobian state constraint.
+are shared with CCOP.  The resulting matched comparison isolates the change
+from the star--star ISPH workflow to terminal-target, midpoint-action CCOP.
 The fixed star--star system is solved by sparse LU.  Its own-anchor residual
-is accepted independently of $D_T^qu_\star^T$, which is retained as a common
-terminal diagnostic without an extra projection.
+and the common terminal diagnostic $D_T^qu_\star^T$ are recorded before any
+further correction.
 
 CCOP couples the same terminal target to the midpoint action.  For a
 trial pressure $p$, the corrected state is
@@ -2011,8 +1998,8 @@ The CCOP branch follows the pressure-dependent chain
 The implemented map is differentiated by a JAX JVP in the matrix-free
 Newton--Krylov solve, including its unrolled geometry iterations.  Acceptance
 separately checks the rebuilt terminal residual, raw positive Jacobians, and
-the kinematic fixed-point defect.  This branch is a pressure-only solver
-variant, not the outer block-Picard implementation used in Cases~1 and~3;
+the kinematic fixed-point defect.  Case~2 uses this pressure-only solver
+variant; Cases~1 and~3 use the outer block-Picard realization.  Implementation
 details are recorded in \cref{sec:case2_implementation_contract}.
 
 \begin{figure}[t]
@@ -2084,7 +2071,7 @@ The one-step attribution of those two configuration roles remains the task of
 Case~1.  Equal pressure dimension does not imply equal cost for the frozen LU
 and nonlinear solves.
 
-\subsection{Relation to other particle formulations}
+\subsubsection{Relation to other particle formulations}
 
 Particle regularization, continuity corrections, and consistent SPH gradients
 address complementary error sources
@@ -2098,7 +2085,7 @@ the same-discretization ISPH--CCOP comparison in
 \cref{tab:case2_transfer_numbers}, rather than a ranking of unmatched
 published energy curves.
 
-\section{Case 3: Configuration separation persists under nonaffine material shear}
+\subsection{Case 3: Configuration separation persists under nonaffine material shear}
 \label{sec:result3}
 
 The differential vortex establishes the same construction under a spatially
@@ -2139,7 +2126,7 @@ With the conservative body force $f=-x$, radial momentum balance yields
 and direct differentiation verifies
 $(u\cdot\nabla)u=-\Omega(r)^2x=-\nabla p+f$.
 
-\subsection{Boundary-action propagation limits composite consistency}
+\subsubsection{Boundary-action propagation limits composite consistency}
 
 Prescribing the exact particle positions isolates spatial reconstruction from
 time integration and nonlinear iteration.  The analytic
@@ -2211,17 +2198,15 @@ first-layer propagated-$G$ sequence is
 Its four-level fitted rate is $0.326$, and an additional $h=1/36$ value is
 $0.03824$.  The corresponding first-layer share of the interior
 pressure-test labels decreases as $0.165,0.111,0.0835,0.0662$, consistent with
-an $O(h)$-thick boundary region.  Localization alone does not explain the
-approximately second-order solution errors: for a regional RMS error of
+an $O(h)$-thick boundary region.  For a regional RMS error of
 order $h^r$, an $O(h)$ mass fraction contributes only a factor $h^{1/2}$
-to its global RMS norm.  The error propagated through the inverse response
-in \eqref{eq:discrete_response_transfer} must be distinguished from this
-operator-action error.  Thus the present data establish a slower composite
-consistency rate, alongside the separately observed smooth-vortex solution
-rate.  They identify boundary propagation of the placed action as the leading
-spatial mechanism limiting the composite response.
+to its global RMS norm.  The inverse response in
+\eqref{eq:discrete_response_transfer} further transforms this localized
+operator error.  The data therefore identify boundary propagation of the
+placed action as the leading limitation on composite consistency, while the
+smooth-vortex solution retains its separate convergence rate.
 
-\subsection{The inverse response retains accurate smooth pressure actions}
+\subsubsection{The inverse response retains accurate smooth pressure actions}
 
 To measure what this consistency defect does to the solved pressure, we
 freeze the same prescribed configurations at $\chi=1$, $\Th=1/2$ and solve
@@ -2230,8 +2215,9 @@ freeze the same prescribed configurations at $\chi=1$, $\Th=1/2$ and solve
  b_{\rm ex}=\mathcal R_h^q(D_T^{\rm str}\mathcal G_{1/2}q).
  \label{eq:manufactured_composite_solve}
 \end{equation}
-The right-hand side is the analytic composite action, not $A_hI_h^Qq$.
-No particle, stencil, pressure space, or operator is changed.  For the physical
+The analytic composite action supplies the right-hand side, producing a
+nontrivial manufactured pressure solve.  All particles, stencils, pressure
+spaces, and operators are held fixed.  For the physical
 radial pressure, \cref{tab:composite_pressure_transfer} shows that the
 near-first-order composite residual gives pressure and final action errors
 with fitted rates 2.183 and 1.990.  The directly measured transfer constant
@@ -2240,8 +2226,8 @@ the sum in \eqref{eq:solved_action_error_decomposition}, which includes direct
 action error and the inverse-transmitted composite defect.  For these data,
 the inverse-transmitted $D$-only and propagated-action contributions converge
 at rates 1.978 and 1.991, respectively.  The improvement therefore occurs before
-the two terms are combined; it is not explained solely by cancellation in the
-final error or contraction of the boundary region.
+the two terms are combined.  Their separate convergence rules out final-error
+cancellation and boundary-region contraction as the sole explanation.
 
 \begin{table}[t]
 \centering
@@ -2269,9 +2255,8 @@ The nonsymmetric pressures $q_1=(1-|X|^2)X_1$ and
 $q_2=(1-|X|^2)X_1X_2$ give solved-pressure rates 2.003 and 2.000,
 and final-action rates 1.988 and 1.961.  All twelve solves have relative
 linear residual below $3.9\times10^{-14}$.  These results support accurate
-response on the tested smooth fields; they do not assert second-order
-$DG$ consistency for arbitrary pressure data or a uniform theorem over
-all shears and placements.
+response for the tested smooth fields and configurations.  Arbitrary pressure
+data and untested shear ranges remain outside this measured conclusion.
 
 The stronger prescribed shear also retains an invertible composite response.  At
 $\chi=1.5$, where $\max\kappa_2(F_{\rm ex})=10.91$, the midpoint responses
@@ -2294,7 +2279,7 @@ study is given in Supplementary Fig.~\ref{fig:supp_transport}.  Recursive
 transport therefore preserves the spatial accuracy established by the direct
 nonaffine reconstruction.
 
-\subsection{Complete nonaffine convergence}
+\subsubsection{Complete nonaffine convergence}
 
 The complete method advances to $T=1$ with its conservative-force
 predictor, nonlinear terminal geometry, placed pressure action, square
@@ -2409,18 +2394,18 @@ for improving boundary actions without confusing algebraic closure with
 spatial accuracy.
 
 The analysis and calculations concern smooth two-dimensional inviscid flows.
-Discrete closure is in the selected pressure-test space, not an assertion of
-exact Jacobian closure.  Midpoint temporal accuracy requires stage consistency,
-and the sampled response gaps are finite-dimensional stability evidence.  The
-transported Piola rows converge on constant physical velocities but do not
-annihilate them algebraically on a finite nonaffine cloud; the resulting
-translation-equivariance defect is therefore reported as a spatial
-consistency error rather than hidden by an additional projection.
+Discrete closure is defined in the selected pressure-test space, while
+Jacobian closure is measured independently.  Midpoint temporal accuracy
+requires stage consistency, and the sampled response gaps provide
+finite-dimensional stability evidence.  On finite nonaffine clouds, the
+transported Piola rows leave a translation-equivariance defect that converges
+as a spatial consistency error.
 The matched ISPH comparison isolates a workflow change; comparisons with
 higher-order time integrators require separate accuracy--cost measurements.
 Within these conditions, CCOP supplies an explicit configuration choice whose
-effect is not visible in the terminal residual alone: equally accurate closure
-can accompany different finite-step pressure-work and deformation paths.
+effect is resolved by pressure-work and deformation histories beyond the
+terminal residual.  Equally accurate closure can therefore accompany distinct
+finite-step action paths.
 
 \appendix
 \section{Exact-reference calculations}

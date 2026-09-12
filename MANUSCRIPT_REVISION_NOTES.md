@@ -101,10 +101,10 @@ reproduction alone was replaced rather than supplemented.
 ## Quantitative compression
 
 - Before: 3,484 lines and 16,598 words.
-- Current: 2,874 lines and 13,555 whitespace-delimited tokens.
+- Current: 2,859 lines and 13,171 whitespace-delimited tokens.
 - Relative to the 3,484-line, 16,598-token pre-compression draft, the current
-  manuscript is shorter by 610 lines and 3,043 tokens (17.5% by line count and
-  18.3% by token count).
+  manuscript is shorter by 625 lines and 3,427 tokens (17.9% by line count and
+  20.6% by token count).
 
 ## Verification
 
@@ -142,3 +142,41 @@ and page-level visual inspection remain separate release checks.
   placements satisfy the same exact work identity, while $G_\Theta$ selects
   which finite-step work is represented and $D_T$ selects the terminal
   pressure-test target.
+
+## Structural rewrite and defensive-language reduction
+
+- The organizational comparison was Brown, Cortez, and Minion, *Journal of
+  Computational Physics* 168 (2001), 464--499,
+  DOI `10.1006/jcph.2001.6715`.  Its separation of general analysis, numerical
+  method, numerical results, and conclusions was used as a writing reference;
+  the present manuscript retains a stronger structure-first theoretical core.
+- The manuscript now follows a mechanism-led computational-paper hierarchy:
+  configuration assignment, finite-step action and work, oblique projection,
+  spatial realization, and a unified numerical-results section.
+- The former long Section 2 was divided after the terminal-anchor result.
+  Local branch analysis, configuration-placement accuracy, and the pressure
+  work identity now form the separate section `Finite-step pressure action and
+  work`.
+- The discrete definitions of $e_{D,h}$, $\varepsilon_{G,h}$, and
+  $\varepsilon_{DG,h}$, including the $D$-only/propagated-action split, were
+  moved from the continuum state--tangent discussion to `Meshless realization
+  and full-operator transport`.
+- Cases 1--3 are now subsections of one `Numerical results` section.  This
+  preserves their scientific roles while presenting case-specific equations,
+  parameters, and measurements as numerical evidence.
+- Defensive-language pattern matches decreased from 115 to 72.  Revisions
+  replaced repeated “not X” formulations with positive definitions; theorem
+  hypotheses, measured scope, and distinctions needed to prevent overclaiming
+  were retained.
+
+### Main-text discipline audit for this revision
+
+| Subsection | Before | After | Decision |
+|---|---:|---:|---|
+| Case 1 | 1,458 tokens | 1,458 tokens | Scientific mechanism unchanged; heading nested under Numerical results |
+| Case 2 | 1,130 tokens | 1,073 tokens | Defensive implementation disclaimers replaced by a matched-comparison definition |
+| Case 3 | 1,469 tokens | 1,442 tokens | Boundary-action and inverse-response findings stated positively |
+
+The revision keeps the structural theory in the main text.  Only spatial
+consistency definitions were relocated, and no result, numerical value, or
+acceptance condition was removed.
