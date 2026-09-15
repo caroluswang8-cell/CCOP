@@ -152,19 +152,24 @@ operators within each case.  Case~2 uses its documented native-pressure
 convention, while Cases~1 and~3 use the cofactor action.
 
 The remainder is organized as follows.  \Cref{sec:configuration_assignment}
-sets the terminal constraint geometry, and
-\cref{sec:finite_step_action_work} develops action placement and pressure work.
-\Cref{sec:ccop_analysis} derives the cross-configuration pressure response and
-its Schur projector.
+assigns the constraint and pressure action to their respective configurations
+and derives the conservative midpoint choice.  \Cref{sec:ccop_analysis} then
+derives the resulting cross-configuration response and its Schur projector.
 \Cref{sec:meshless_discretization} describes the meshless realization and
 full-operator transport.  The three numerical cases are presented in
 \cref{sec:result1,sec:result2,sec:result3}, followed by the combined discussion
 and conclusions.
 
-\section{Configuration assignment in a finite material step}
+\section{Configuration assignment of the pressure projection}
 \label{sec:configuration_assignment}
 
-\subsection{A same-configuration reference pair}
+The finite-step projection assigns two configuration-dependent operators.  The
+accepted volume state determines where incompressibility is tested, while the
+step-integrated pressure impulse determines where the multiplier acts.  We
+derive these assignments in that order and then combine them into the pressure
+response underlying the oblique projection.
+
+\subsection{Terminal constraint and the fixed-configuration reference}
 
 Let $\M^n\subset\R^d$ be the material support at the beginning of a step and
 let
@@ -224,11 +229,12 @@ actual trial and test spaces, then
   =-\ip[Q',Q]{\D_\alpha v}{q}.
   \label{eq:continuum_adjointness}
 \end{equation}
-This is the same-configuration Hodge reference under compatible boundary
-conditions.  The meshless realization below measures its endpoint baseline
-and the additional placement-dependent obliqueness separately.
+Equation~\eqref{eq:continuum_adjointness} is the fixed-configuration Hodge
+reference.  A finite Lagrangian step introduces a different question because
+the accepted constraint and the pressure action need not belong to the same
+configuration.
 
-\subsection{Finite-volume state and its terminal tangent}
+\subsubsection{Finite-volume state and its terminal tangent}
 \label{sec:state_tangent_bridge}
 
 Because $\M^n$ is the current reference, local finite-step volume preservation
@@ -270,34 +276,11 @@ the logarithmic variation.
 \end{proof}
 
 The spatial method realizes this continuum tangent in a finite pressure-test
-space.  Its consistency with $D_T^{\rm str}$ and with the composite response
-$D_T^{\rm str}\mathcal G_\Th$ is defined in
-\cref{sec:discrete_operator_consistency}.  This separation preserves the
-state--tangent interpretation while allowing the numerical experiments to
-measure spatial reconstruction and finite-step state error independently.
+space.  Its consistency with $D_T^{\rm str}$ is defined in
+\cref{sec:discrete_operator_consistency}.  The configuration assignment itself
+follows from comparing the accepted terminal state with a lagged constraint.
 
-This is the point at which the finite-step constraint viewpoint meets the
-projection architecture.  The accepted state fixes the terminal constraint
-tangent $D_T$, but retaining a pressure/PPE factorization represents the
-multiplier through a pressure field and a continuum action operator.  Unlike an
-abstract finite-dimensional reaction direction, that action is the
-configuration-dependent Piola map $G[q]$.  The pressure block of the
-factorization therefore depends on two geometries: the terminal geometry at
-which admissibility is tested and the action geometry at which the multiplier
-is represented.
-
-At frozen geometry the pressure derivative of the terminal tangent residual is
-\begin{equation}
- D_p\!\left[\D_T
- (u^\star-\dt\G_\Th p)\right][\delta p]
- =-\dt\D_T\G_\Th\delta p.
- \label{eq:cross_response_as_tangent_pressure_block}
-\end{equation}
-Hence $\D_T\G_\Th$ is the frozen pressure-to-terminal-tangent response.  In the
-coupled step, the pressure dependence of $x_T$ adds the corresponding geometry
-blocks to this principal response.
-
-\subsection{Why the constraint is terminal}
+\subsubsection{Why the constraint is terminal}
 
 Let $\alpha<T$ and let
 $\Psi_{\alpha\to T}=\Phi_T\circ\Phi_\alpha^{-1}$ denote the relative map.
@@ -357,10 +340,8 @@ assignment is
   \label{eq:terminal_assignment}
 \end{equation}
 
-\section{Finite-step pressure action and work}
+\subsection{Physical selection of the pressure-action configuration}
 \label{sec:finite_step_action_work}
-
-\subsection{Geometric action placement and impulse accuracy}
 
 The pressure contribution to material momentum is an interval impulse,
 \begin{equation}
@@ -372,14 +353,81 @@ A one-stage correction replaces this field-valued integral by
   I_p\approx\dt\G_\Th p_\Th.
   \label{eq:placed_pressure_impulse}
 \end{equation}
-The action configuration therefore defines a one-stage representative of the
-pressure impulse, whereas the terminal configuration defines an admissibility
-target.  Three choices are distinct in a finite material step: the temporal
-stage of the state integrator, the stage represented by the pressure
-coefficient, and the material configuration carrying the pressure operator.
-The parameter $\Th$ controls only the third choice.  Its temporal consequence
-can be quantified by a one-point quadrature expansion once the coefficient
-stage and geometric path satisfy their own consistency conditions.
+We represent the action geometry on the labelled-position path
+\begin{equation}
+  x_\Th=x_n+\Th(x_T-x_n),\qquad 0\le\Th\le1.
+  \label{eq:linear_action_path}
+\end{equation}
+The action configuration defines a one-stage representative of the pressure
+impulse, whereas the terminal configuration defines the admissibility target.
+Three choices are distinct: the temporal stage of the state integrator, the
+stage represented by the pressure coefficient, and the material configuration
+carrying the pressure operator.  The parameter $\Th$ controls the third choice.
+It is geometric rather than merely temporal.
+
+The action placement is selected by physical pressure-impulse and work
+accuracy, rather than introduced as a tuning parameter.  To separate this
+selection principle from an algebraic identity, write
+\begin{equation}
+  u_T=u^\star-\dt\G_\Th p_\Th,
+  \qquad \D_Tu_T=0.
+  \label{eq:terminal_action_step_continuum}
+\end{equation}
+Every admissible placement satisfies an exact work identity with the action it
+represents.  This identity does not by itself determine which represented
+action best approximates the physical pressure work.
+
+\begin{proposition}[Discrete pressure work--energy identity]
+\label{prop:discrete_pressure_work_energy}
+Let $g_\Th=\G_\Th p_\Th$, let
+$u_T=u^\star-\dt g_\Th$, and define
+$E_m(u)=\half\norm[m]{u}^2$ using the same material mass inner product at both
+ends of the correction.  Then, for every admissible action placement,
+\begin{equation}
+ \Delta E_p(\Th)
+ =E_m(u_T)-E_m(u^\star)
+ =-\dt\ip[m]{\frac{u^\star+u_T}{2}}{g_\Th}
+ =-\dt\ip[m]{u^\star}{g_\Th}
+  +\frac{\dt^2}{2}\norm[m]{g_\Th}^2.
+ \label{eq:discrete_pressure_work_energy}
+\end{equation}
+Thus the discrete pressure work
+$W_{p,\Th}^{\dt}:=-\dt\ip[m]{(u^\star+u_T)/2}{g_\Th}$ exactly accounts for
+the pressure-induced kinetic-energy change.  This identity requires neither
+adjointness of $D_T$ and $G_\Th$ nor symmetry of $D_TG_\Th$.
+\end{proposition}
+
+\begin{proof}
+The polarization identity in the material mass inner product gives
+\[
+ E_m(u_T)-E_m(u^\star)
+ =\ip[m]{\frac{u^\star+u_T}{2}}{u_T-u^\star}.
+\]
+Substitution of $u_T-u^\star=-\dt g_\Th$ proves the first equality in
+\eqref{eq:discrete_pressure_work_energy}; substituting
+$u_T=u^\star-\dt g_\Th$ gives the second.
+\end{proof}
+
+We call \eqref{eq:discrete_pressure_work_energy} exact discrete work
+consistency with the represented pressure action.  Physical work accuracy
+instead compares $W_{p,\Th}^{\dt}$ with
+\begin{equation}
+ W_p^{\rm ex}
+ =-\int_{t_n}^{t_{n+1}}\ip[m]{u(t)}{\G(t)p(t)}\,dt.
+ \label{eq:exact_continuous_pressure_work}
+\end{equation}
+This approximation depends on the geometric action placement, pressure-stage
+consistency, the nonpressure predictor, and any force or viscous splitting.
+Accordingly, $D_T$ selects the admissible terminal state, whereas
+$G_\Th p_\Th$ selects the pressure direction and the work represented by the
+correction.  Terminal closure alone therefore fixes neither the pressure
+impulse nor its kinetic work.
+
+\subsection{Why midpoint action is selected in the present conservative setting}
+
+The temporal consequence of action placement follows from a one-point
+quadrature expansion once the coefficient stage and geometric path satisfy
+their own consistency conditions.
 
 \begin{proposition}[Defect of the placed pressure impulse]
 \label{prop:placed_impulse_order}
@@ -421,10 +469,11 @@ cancellation at $\Th=1/2$.
 \end{proof}
 
 The proposition separates impulse accuracy into quadrature, pressure-stage,
-and geometric-placement contributions.  Exact discrete pressure work follows
-from a different identity established below.
+and geometric-placement contributions.  It therefore determines the accuracy
+of the action entering the exact work identity, rather than the validity of
+that identity.
 
-\subsection{Local branch and configuration-placement defect}
+\subsubsection{Coupled local branch and configuration-placement defect}
 
 The actual CCOP residual is degenerate at zero step size: if $D_nu_n=0$, then
 $\mathcal R(p,0)=0$ for every pressure coefficient.  The following rescaling
@@ -643,74 +692,16 @@ where $r$ is established by the spatial action audit.  Velocity-dependent
 viscous terms, nonmatching force splittings, and nonhomogeneous-boundary stages
 require separate consistency arguments.
 
-Proposition~\ref{prop:placed_impulse_order} therefore gives a pressure-substep
-design rule under stage consistency.  Second-order midpoint stage accuracy
-produces a third-order local impulse defect, while an $O(\dt)$ stage error
-produces an $O(\dt^2)$ local defect.  Varying $\Th$ changes the action geometry
-within the same one-stage scalar pressure solve.
+Proposition~\ref{prop:placed_impulse_order} therefore gives a pressure-action
+design rule under stage consistency.  A second-order midpoint action gives a
+third-order local impulse defect, whereas a first-order endpoint stage gives a
+second-order local defect.  Proposition~\ref{prop:actual_ccop_local_defect}
+shows the corresponding cancellation in the fully coupled velocity update.
+Varying $\Th$ changes the action geometry within the same scalar pressure
+stage.
 
-\subsection{Pressure work--energy identity}
-
-The target/action roles lead to
-\begin{equation}
-  u_T=u^\star-\dt\G_\Th p_\Th,
-  \qquad \D_Tu_T=0.
-  \label{eq:terminal_action_step_continuum}
-\end{equation}
-
-The pressure correction also carries an exact finite-step work identity.  This
-identity concerns consistency between the represented pressure action and the
-momentum change that it generates.  It is distinct from the temporal accuracy
-with which that action approximates the continuous pressure work.
-
-\begin{proposition}[Discrete pressure work--energy identity]
-\label{prop:discrete_pressure_work_energy}
-Let $g_\Th=\G_\Th p_\Th$, let
-$u_T=u^\star-\dt g_\Th$, and define
-$E_m(u)=\half\norm[m]{u}^2$ using the same material mass inner product at both
-ends of the correction.  Then, for every admissible action placement,
-\begin{equation}
- \Delta E_p(\Th)
- =E_m(u_T)-E_m(u^\star)
- =-\dt\ip[m]{\frac{u^\star+u_T}{2}}{g_\Th}
- =-\dt\ip[m]{u^\star}{g_\Th}
-  +\frac{\dt^2}{2}\norm[m]{g_\Th}^2.
- \label{eq:discrete_pressure_work_energy}
-\end{equation}
-Thus the discrete pressure work
-$W_{p,\Th}^{\dt}:=-\dt\ip[m]{(u^\star+u_T)/2}{g_\Th}$ exactly accounts for
-the pressure-induced kinetic-energy change.  The identity requires neither
-adjointness of $D_T$ and $G_\Th$ nor symmetry of $D_TG_\Th$.
-\end{proposition}
-
-\begin{proof}
-The polarization identity in the material mass inner product gives
-\[
- E_m(u_T)-E_m(u^\star)
- =\ip[m]{\frac{u^\star+u_T}{2}}{u_T-u^\star}.
-\]
-Substitution of $u_T-u^\star=-\dt g_\Th$ proves the first equality in
-\eqref{eq:discrete_pressure_work_energy}; substituting
-$u_T=u^\star-\dt g_\Th$ gives the second.
-\end{proof}
-
-We call \eqref{eq:discrete_pressure_work_energy} exact discrete work
-consistency with the represented pressure action.  Physical work accuracy
-instead compares $W_{p,\Th}^{\dt}$ with
-\begin{equation}
- W_p^{\rm ex}
- =-\int_{t_n}^{t_{n+1}}\ip[m]{u(t)}{\G(t)p(t)}\,dt.
- \label{eq:exact_continuous_pressure_work}
-\end{equation}
-This approximation depends on the geometric action placement, pressure-stage
-consistency, the nonpressure predictor, and any force or viscous splitting.
-Accordingly, $D_T$ selects the represented admissible terminal state, whereas
-$G_\Th p_\Th$ selects the pressure direction and the work realized by the
-correction.  Terminal closure alone fixes neither the pressure impulse nor its
-kinetic work.
-
-Under the stronger same-configuration adjoint assumptions, the two endpoint
-placements have a useful sign interpretation.
+For compatible same-configuration endpoint pairs, the work identity also gives
+a sign structure that identifies an interior work-neutral action.
 
 \begin{proposition}[Endpoint work bias]
 \label{prop:endpoint_work_bias}
@@ -735,12 +726,30 @@ claim.
 \end{proof}
 
 Whenever the endpoint values bracket zero, continuity supplies a work-neutral
-interior placement; this is the criterion used in the experiment.  More
-generally, the configuration assignment is summarized by
+interior placement.  The impulse expansion and the coupled local defect select
+the midpoint to leading order for the stage-consistent conservative predictor
+used here.  Case~1 independently measures the work-neutral root and its
+convergence to the midpoint.  The general configuration assignment and the
+choice used for the principal conservative comparisons are therefore
 \begin{equation}
-  \boxed{(\alpha_c,\alpha_a)=(T,\Th).}
+  \boxed{(\alpha_c,\alpha_a)=(T,\Th),
+  \qquad \Th=\frac12\ \text{for the present conservative setting}.}
   \label{eq:configuration_assignment_summary}
 \end{equation}
+
+These two assignments determine the pressure response.  Terminal admissibility
+is tested by $D_T$, while the pressure action is represented by $G_\Th$.
+Consequently, the frozen pressure derivative of the terminal residual is
+\begin{equation}
+ D_p\!\left[\D_T
+ (u^\star-\dt\G_\Th p)\right][\delta p]
+ =-\dt\D_T\G_\Th\delta p.
+ \label{eq:cross_response_as_tangent_pressure_block}
+\end{equation}
+Thus $D_TG_\Th$ is the pressure-to-terminal-constraint response selected by the
+two physical roles.  Its inverse generates the configuration-dependent oblique
+projection developed next.  In the coupled step, the pressure dependence of
+$x_T$ adds geometry derivatives around this frozen principal response.
 
 \section{Configuration-consistent oblique projection}
 \label{sec:ccop_analysis}
@@ -748,15 +757,9 @@ generally, the configuration assignment is summarized by
 \subsection{Action path and nonlinear terminal state}
 
 At the beginning of a step, $x_n$ is the current labelled configuration.  The
-nonpressure predictor supplies $u^\star$ and $x^\star$.  CCOP restricts the
-unresolved multiplier-action geometry to the affine labelled-position path
-between the two step endpoints,
-\begin{equation}
-  x_\Th=x_n+\Th(x_T-x_n),\qquad 0\le\Th\le1.
-  \label{eq:linear_action_path}
-\end{equation}
-This one-point path parameterizes admissible pressure-operator geometries
-independently of the state time integrator.  Hence $\Th=1/2$ defines the
+nonpressure predictor supplies $u^\star$ and $x^\star$.  The action path
+\eqref{eq:linear_action_path} parameterizes admissible pressure-operator
+geometries independently of the state time integrator.  Hence $\Th=1/2$ defines the
 mixed-configuration response $D_TG_{1/2}$, while a common-stage midpoint
 method would use $D_{1/2}G_{1/2}$.  Every placement retains a single scalar
 pressure/PPE solve.  With the current spatial gradient $\Grad_n$,

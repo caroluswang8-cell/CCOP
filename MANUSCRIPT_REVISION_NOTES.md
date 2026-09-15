@@ -101,10 +101,10 @@ reproduction alone was replaced rather than supplemented.
 ## Quantitative compression
 
 - Before: 3,484 lines and 16,598 words.
-- Current: 2,859 lines and 13,171 whitespace-delimited tokens.
+- Current: 2,862 lines and 13,232 whitespace-delimited tokens.
 - Relative to the 3,484-line, 16,598-token pre-compression draft, the current
-  manuscript is shorter by 625 lines and 3,427 tokens (17.9% by line count and
-  20.6% by token count).
+  manuscript is shorter by 622 lines and 3,366 tokens (17.9% by line count and
+  20.3% by token count).
 
 ## Verification
 
@@ -153,10 +153,10 @@ and page-level visual inspection remain separate release checks.
 - The manuscript now follows a mechanism-led computational-paper hierarchy:
   configuration assignment, finite-step action and work, oblique projection,
   spatial realization, and a unified numerical-results section.
-- The former long Section 2 was divided after the terminal-anchor result.
-  Local branch analysis, configuration-placement accuracy, and the pressure
-  work identity now form the separate section `Finite-step pressure action and
-  work`.
+- The pre-projector continuum theory is consolidated into one
+  configuration-assignment section.  Its three subsections derive the terminal
+  target, the placed action and work criterion, and the conservative midpoint
+  choice in sequence.
 - The discrete definitions of $e_{D,h}$, $\varepsilon_{G,h}$, and
   $\varepsilon_{DG,h}$, including the $D$-only/propagated-action split, were
   moved from the continuum state--tangent discussion to `Meshless realization
@@ -180,3 +180,35 @@ and page-level visual inspection remain separate release checks.
 The revision keeps the structural theory in the main text.  Only spatial
 consistency definitions were relocated, and no result, numerical value, or
 acceptance condition was removed.
+
+## Pre-projector theory reorganization
+
+- The continuum theory preceding the oblique projector now follows one causal
+  sequence: accepted volume state $\to$ terminal constraint, interval pressure
+  impulse and work $\to$ pressure-action configuration, and the two assignments
+  $\to D_TG_\Theta$.
+- The same-configuration adjoint pair is retained as the fixed-configuration
+  reference inside the terminal-constraint subsection.  It no longer appears
+  as an independent narrative branch.
+- The cross response $D_TG_\Theta$ is introduced only after both configuration
+  assignments have been derived.  It now provides the direct transition into
+  the configuration-dependent oblique projector.
+- The exact discrete work--energy identity precedes the placement-accuracy
+  analysis.  This order distinguishes an identity satisfied by every
+  admissible placement from physical impulse and work accuracy, which select
+  the action geometry.
+- The midpoint subsection now combines the one-point impulse defect, the
+  rescaled local CCOP branch, the coupled velocity defect, and endpoint work
+  bias.  Midpoint is presented as the leading-order choice for the stated
+  stage-consistent conservative predictor, with separate consistency required
+  for viscous or nonmatching force splittings.
+
+### Main-text discipline audit for this revision
+
+- Scope: continuum theory before the oblique-projection section only.
+- Retained: every proposition, proof, equation, hypothesis, and cross-reference.
+- Replaced: parallel module introductions by three role-based subsections.
+- Relocated: the work identity ahead of impulse-accuracy analysis and the cross
+  response to the final bridge into the projector section.
+- Word-count change: 13,171 to 13,232 whitespace-delimited tokens for the full
+  manuscript, a net increase of 61 tokens caused by explicit causal transitions.
